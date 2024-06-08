@@ -3,3 +3,17 @@ pandas
 plotly
 flake8
 pillow
+openai
+pynput
+sounddevice
+whisper
+langchain-openai
+langchain
+soundfile
+python-dotenv
+pynput
+gtts
+pydub
+
+
+
