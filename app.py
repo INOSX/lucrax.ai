@@ -3,9 +3,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 import io
+import time
 from openai_analyzer import analyze_data_with_openai  # Importe a função de análise da OpenAI
+from PIL import Image
 
 def app():
+    
     """
     Função principal para executar o aplicativo Streamlit.
     """
@@ -21,12 +24,34 @@ def app():
                 """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+    if "show_logo" not in st.session_state:
+        st.session_state.show_logo = True
+
+    if st.session_state.show_logo:
+        logo = Image.open("images/dataGPT4-480x480.png")  # Substitua pelo caminho do seu logo
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.write("")
+        with col2:
+            st.image(logo, width=480, use_column_width=False)
+        with col3:
+            st.write("")
+        time.sleep(3)  # Aguarda 3 segundos
+        st.session_state.show_logo = False
+        st.experimental_rerun()
+
+    # Exibir o logo acima da descrição
+    logo = Image.open("images/dataGPT4-480x480.png")  # Substitua pelo caminho do seu logo
+    st.image(logo, width=128, use_column_width=False)
+
+
     st.title("dataGPT para o Google Drive")
     st.markdown("""
     ## Descrição
-    O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
+O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
     Você pode inserir um link de compartilhamento de um arquivo Google Sheets, 
     escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
+    Além disso, você pode utilizar inteligência artificial para analisar os gráficos gerados.
 
     ### Como usar:
     1. Insira o link do arquivo Google Sheets compartilhado.
