@@ -6,11 +6,14 @@ import io
 import time
 from openai_analyzer import analyze_data_with_openai
 from PIL import Image
+from talking_llm import TalkingLLM
+from utils import get_csv_export_url, load_data
+
+talking_llm = TalkingLLM()
 
 def app():
-    
     """
-    Função principal para executar o aplicativo Streamlit.
+    Função principal para executar o aplicativo.
     """
     st.set_page_config(page_title="Visualizador de Dados do Google Drive", layout="wide", initial_sidebar_state="expanded")
 
@@ -44,54 +47,25 @@ def app():
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
-
     st.title("dataGPT para o Google Drive")
     st.markdown("""
     ## Descrição
     O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
     Você pode inserir um link de compartilhamento de um arquivo Google Sheets, 
     escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
-    Além disso, você pode utilizar inteligência artificial para analisar os gráficos gerados.
+    Além disso, será utilizado inteligência artificial para analisar os gráficos gerados e ouvir a análise em voz alta.
 
     ### Como usar:
     1. Insira o link do arquivo Google Sheets compartilhado.
     2. Selecione as colunas para os eixos X e Y do gráfico.
     3. Visualize os dados carregados e o gráfico gerado.
-    4. Baixe o gráfico gerado como um arquivo HTML.
+    4. Baixe o gráfico gerado como um arquivo HTML
+    5. Peça a analise pela nossa I.A..
     """)
-
-    def get_csv_export_url(url):
-        """
-        Converte o URL de visualização do Google Sheets para um URL de exportação CSV.
-
-        Parameters:
-        url (str): O URL de visualização do Google Sheets.
-
-        Returns:
-        str: O URL de exportação CSV.
-        """
-        file_id = url.split('/')[5]
-        csv_export_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
-        return csv_export_url
-
-    @st.cache_data
-    def load_data(url):
-        """
-        Carrega os dados do Google Sheets em um DataFrame pandas.
-
-        Parameters:
-        url (str): O URL de exportação CSV do Google Sheets.
-
-        Returns:
-        pd.DataFrame: O DataFrame contendo os dados carregados.
-        """
-        csv_url = get_csv_export_url(url)
-        data = pd.read_csv(csv_url)
-        return data
 
     # Input para o link do Google Drive
     st.sidebar.header('Link do Google Drive')
-    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive")
+    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive e pressione ENTER.")
 
     if google_drive_link:
         try:
@@ -163,12 +137,13 @@ def app():
                     mime='text/csv'
                 )
 
-                # Analisar dados com OpenAI
-                if st.button("Analisar Dados com OpenAI"):
+                # Analisar dados com OpenAI e reproduzir a análise em voz alta
+                if st.button("Analise da I.A."):
                     with st.spinner('Analisando dados...'):
                         analysis = analyze_data_with_openai(data, title, x_axis_label, y_axis_label)
-                        st.subheader("Análise do ChatGPT")
+                        st.subheader("Análise da I.A.")
                         st.write(analysis)
+                        talking_llm.llm_queue.put(analysis)
 
         except Exception as e:
             st.error(f"Erro ao carregar os dados: {e}")
