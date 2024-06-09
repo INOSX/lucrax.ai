@@ -1,53 +1,67 @@
 import os
 import io
 import threading
-from queue import Queue
 from gtts import gTTS
+from pydub import AudioSegment
 import sounddevice as sd
 import soundfile as sf
-from pydub import AudioSegment
-from pydub.playback import play
 from langchain_openai import ChatOpenAI
 from config import OPENAI_API_KEY
 
-class TalkingLLM():
-    def __init__(self, model="gpt-3.5-turbo-0613"):
+class TalkingLLM:
+    def __init__(self, model="gpt-4"):
         print("Inicializando TalkingLLM")
         self.llm = ChatOpenAI(model=model, openai_api_key=OPENAI_API_KEY)
-        self.llm_queue = Queue()
-        self.run()
+        self.audio_data = None
+        self.is_playing = False
 
-    def convert_and_play(self):
-        print("Iniciando thread de conversão e reprodução de áudio")
-        while True:
-            tts_text = self.llm_queue.get()
-            print("Texto recebido para TTS:", tts_text)  # Debugging
+    def convert_text_to_audio(self, text):
+        print("Convertendo texto para áudio")
+        try:
+            text = text.replace('**', '')
 
-            if tts_text:
-                print("Iniciando TTS para:", tts_text)
-                try:
-                    tts = gTTS(text=tts_text, lang='pt')
-                    with io.BytesIO() as buffer:
-                        tts.write_to_fp(buffer)
-                        buffer.seek(0)
-                        audio = AudioSegment.from_file(buffer, format="mp3")
-                        
-                        # Ajustar a velocidade de leitura
-                        playback_speed = 1.5  # Aumente este valor para aumentar a velocidade
-                        audio = audio.speedup(playback_speed=playback_speed)
+            tts = gTTS(text=text, lang='pt')
+            with io.BytesIO() as buffer:
+                tts.write_to_fp(buffer)
+                buffer.seek(0)
+                audio = AudioSegment.from_file(buffer, format="mp3")
 
-                        # Salvar áudio temporário para reprodução
-                        temp_audio_path = "temp_audio.wav"
-                        audio.export(temp_audio_path, format="wav")
+                playback_speed = 1.3
+                audio = audio.speedup(playback_speed=playback_speed)
 
-                        # Reproduzir áudio
-                        print("Reproduzindo áudio")
-                        play(audio)
-                        os.remove(temp_audio_path)
-                except Exception as e:
-                    print("Erro ao gerar TTS:", e)
+                temp_audio_path = "temp_audio.wav"
+                audio.export(temp_audio_path, format="wav")
 
-    def run(self):
-        print("Iniciando thread principal")
-        t1 = threading.Thread(target=self.convert_and_play)
-        t1.start()
+                with open(temp_audio_path, 'rb') as f:
+                    self.audio_data = f.read()
+                
+                os.remove(temp_audio_path)
+                print("Áudio convertido e pronto para reprodução")
+        except Exception as e:
+            print("Erro ao gerar TTS:", e)
+
+    def play_audio(self):
+        if self.audio_data:
+            try:
+                self.is_playing = True
+                print("Tentando reproduzir o áudio")
+                with io.BytesIO(self.audio_data) as buffer:
+                    audio, samplerate = sf.read(buffer)
+                    sd.play(audio, samplerate)
+                    sd.wait()
+                    print("Áudio reproduzido com sucesso")
+                    self.is_playing = False
+            except Exception as e:
+                print("Erro ao reproduzir áudio:", e)
+                self.is_playing = False
+        else:
+            print("Nenhum áudio para reproduzir")
+
+    def stop_audio(self):
+        if self.is_playing:
+            print("Parando reprodução do áudio")
+            sd.stop()
+            self.is_playing = False
+            print("Reprodução do áudio interrompida")
+        else:
+            print("Nenhuma reprodução em andamento")
