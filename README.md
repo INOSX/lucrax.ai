@@ -1,6 +1,6 @@
 <p align="center">
   <a href="" rel="noopener">
- <img width=200px height=200px src="images/dataGPT4.png" alt="Project logo"></a>
+ <img width=200px height=200px src="images/dataGPT4-480x480.png" alt="Project logo"></a>
 </p>
 
 <h3 align="center">dataGPT para o Google Drive</h3>
