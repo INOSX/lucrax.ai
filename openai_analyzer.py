@@ -42,7 +42,7 @@ def analyze_data_with_openai(data, title, x_axis_label, y_axis_label):
 
     # Enviar a mensagem para a OpenAI
     response = client.chat.completions.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo-0613",
         messages=[
             {"role": "system", "content": "Você é um analista de dados."},
             {"role": "user", "content": prompt},

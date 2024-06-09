@@ -7,17 +7,10 @@ import time
 from openai_analyzer import analyze_data_with_openai
 from PIL import Image
 from talking_llm import TalkingLLM
-from utils import get_csv_export_url, load_data
-
-talking_llm = TalkingLLM()
 
 def app():
-    """
-    Função principal para executar o aplicativo.
-    """
     st.set_page_config(page_title="Visualizador de Dados do Google Drive", layout="wide", initial_sidebar_state="expanded")
 
-    # Ocultar a mensagem de "Deploy"
     hide_streamlit_style = """
                 <style>
                 #MainMenu {visibility: hidden;}
@@ -39,11 +32,10 @@ def app():
             st.image(logo, width=480, use_column_width=False)
         with col3:
             st.write("")
-        time.sleep(3)  # Aguarda 3 segundos
+        time.sleep(3)
         st.session_state.show_logo = False
         st.experimental_rerun()
 
-    # Exibir o logo acima da descrição
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
@@ -53,28 +45,35 @@ def app():
     O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
     Você pode inserir um link de compartilhamento de um arquivo Google Sheets, 
     escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
-    Além disso, será utilizado inteligência artificial para analisar os gráficos gerados e ouvir a análise em voz alta.
+    Além disso, você pode utilizar inteligência artificial para analisar os gráficos gerados.
 
     ### Como usar:
     1. Insira o link do arquivo Google Sheets compartilhado.
     2. Selecione as colunas para os eixos X e Y do gráfico.
     3. Visualize os dados carregados e o gráfico gerado.
-    4. Baixe o gráfico gerado como um arquivo HTML
-    5. Peça a analise pela nossa I.A..
+    4. Baixe o gráfico gerado como um arquivo HTML.
     """)
 
-    # Input para o link do Google Drive
+    def get_csv_export_url(url):
+        file_id = url.split('/')[5]
+        csv_export_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
+        return csv_export_url
+
+    @st.cache_data
+    def load_data(url):
+        csv_url = get_csv_export_url(url)
+        data = pd.read_csv(csv_url)
+        return data
+
     st.sidebar.header('Link do Google Drive')
-    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive e pressione ENTER.")
+    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive")
 
     if google_drive_link:
         try:
-            # Carrega os dados e exibe na tela central
             data = load_data(google_drive_link)
             st.write("Dados Carregados:")
             st.dataframe(data)
 
-            # Seção de filtros
             st.sidebar.header('Filtros')
             columns = data.columns.tolist()
             filters = {}
@@ -83,19 +82,15 @@ def app():
                 selected_values = st.sidebar.multiselect(f'Selecione valores para {column}', unique_values, default=unique_values)
                 filters[column] = selected_values
 
-            # Aplicar filtros
             for column, selected_values in filters.items():
                 data = data[data[column].isin(selected_values)]
 
-            # Seleção de colunas para os eixos X e Y
             st.sidebar.header('Configuração do Gráfico')
             x_axis_col = st.sidebar.selectbox("Selecione a coluna para o eixo X", data.columns)
             y_axis_col = st.sidebar.selectbox("Selecione a coluna para o eixo Y", data.columns)
 
-            # Seleção do tipo de gráfico
             chart_type = st.sidebar.selectbox("Selecione o tipo de gráfico", ['Linha', 'Barra', 'Dispersão'])
 
-            # Personalização de gráficos
             st.sidebar.header('Personalização do Gráfico')
             title = st.sidebar.text_input("Título do Gráfico", value=f"Gráfico de {x_axis_col} vs {y_axis_col}")
             x_axis_label = st.sidebar.text_input("Label do Eixo X", value=x_axis_col)
@@ -103,7 +98,6 @@ def app():
             color = st.sidebar.color_picker("Escolha uma cor", value='#1f77b4')
 
             if x_axis_col and y_axis_col:
-                # Gera o gráfico com as colunas selecionadas e tipo de gráfico
                 if chart_type == 'Linha':
                     fig = px.line(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label})
                 elif chart_type == 'Barra':
@@ -111,12 +105,10 @@ def app():
                 elif chart_type == 'Dispersão':
                     fig = px.scatter(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label})
                 
-                # Atualizar a cor do gráfico
                 fig.update_traces(marker=dict(color=color))
 
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Permite baixar o gráfico como HTML
                 buffer = io.StringIO()
                 pio.write_html(fig, buffer)
                 html_bytes = buffer.getvalue().encode()
@@ -128,7 +120,6 @@ def app():
                     mime='text/html'
                 )
 
-                # Permite baixar os dados filtrados como CSV
                 csv = data.to_csv(index=False)
                 st.download_button(
                     label="Baixar Dados Filtrados como CSV",
@@ -137,13 +128,36 @@ def app():
                     mime='text/csv'
                 )
 
-                # Analisar dados com OpenAI e reproduzir a análise em voz alta
-                if st.button("Analise da I.A."):
+                if 'talking_llm' not in st.session_state:
+                    st.session_state.talking_llm = TalkingLLM()
+
+                if st.button("Analisar Dados com OpenAI"):
                     with st.spinner('Analisando dados...'):
-                        analysis = analyze_data_with_openai(data, title, x_axis_label, y_axis_label)
-                        st.subheader("Análise da I.A.")
-                        st.write(analysis)
-                        talking_llm.llm_queue.put(analysis)
+                        try:
+                            analysis = analyze_data_with_openai(data, title, x_axis_label, y_axis_label)
+                            st.session_state.analysis = analysis
+                            st.session_state.audio_converted = False
+                        except Exception as e:
+                            st.error(f"Erro ao analisar dados: {e}")
+
+                if 'analysis' in st.session_state:
+                    st.subheader("Análise do ChatGPT")
+                    st.write(st.session_state.analysis)
+
+                    if not st.session_state.audio_converted:
+                        if st.button("Convert to Speech"):
+                            with st.spinner('Convertendo texto para áudio...'):
+                                st.session_state.talking_llm.convert_text_to_audio(st.session_state.analysis)
+                                st.session_state.audio_converted = True
+
+                    if st.session_state.audio_converted:
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("Play Análise"):
+                                st.session_state.talking_llm.play_audio()
+                        with col2:
+                            if st.button("Parar Análise"):
+                                st.session_state.talking_llm.stop_audio()
 
         except Exception as e:
             st.error(f"Erro ao carregar os dados: {e}")
