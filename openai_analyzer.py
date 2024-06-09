@@ -13,7 +13,7 @@ client = OpenAI(
 
 def analyze_data_with_openai(data, title, x_axis_label, y_axis_label):
     """
-    Envia dados e informações do gráfico para análise com OpenAI.
+    Envia dados e informações do gráfico para análise da I.A..
 
     Parâmetros:
     data (pd.DataFrame): Dados filtrados.
@@ -22,7 +22,7 @@ def analyze_data_with_openai(data, title, x_axis_label, y_axis_label):
     y_axis_label (str): Rótulo do eixo Y.
 
     Retorna:
-    str: Análise gerada pelo OpenAI.
+    str: Análise gerada pela I.A..
     """
     # Converter o DataFrame para uma string CSV
     data_csv = data.to_csv(index=False)
