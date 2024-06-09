@@ -9,7 +9,7 @@ from PIL import Image
 from talking_llm import TalkingLLM
 
 def app():
-    st.set_page_config(page_title="Visualizador de Dados do Google Drive", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="dataGPT para Google Drive", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
@@ -52,6 +52,7 @@ def app():
     2. Selecione as colunas para os eixos X e Y do gráfico.
     3. Visualize os dados carregados e o gráfico gerado.
     4. Baixe o gráfico gerado como um arquivo HTML.
+    5. Analise os dados com a nossa I.A.
     """)
 
     def get_csv_export_url(url):
@@ -66,7 +67,7 @@ def app():
         return data
 
     st.sidebar.header('Link do Google Drive')
-    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive")
+    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive e pressione 'ENTER'.")
 
     if google_drive_link:
         try:
@@ -131,7 +132,7 @@ def app():
                 if 'talking_llm' not in st.session_state:
                     st.session_state.talking_llm = TalkingLLM()
 
-                if st.button("Analisar Dados com OpenAI"):
+                if st.button("Analisar Dados com I.A."):
                     with st.spinner('Analisando dados...'):
                         try:
                             analysis = analyze_data_with_openai(data, title, x_axis_label, y_axis_label)
@@ -141,7 +142,7 @@ def app():
                             st.error(f"Erro ao analisar dados: {e}")
 
                 if 'analysis' in st.session_state:
-                    st.subheader("Análise do ChatGPT")
+                    st.subheader("Análise da I.A.")
                     st.write(st.session_state.analysis)
 
                     if not st.session_state.audio_converted:
