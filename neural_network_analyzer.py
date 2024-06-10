@@ -1,17 +1,9 @@
 import openai
 import pandas as pd
-from config import OPENAI_API_KEY
-from openai import OpenAI
+import streamlit as st
+from config import get_api_key
 
-# Configure a chave da API da OpenAI
-openai.api_key = OPENAI_API_KEY
-client = OpenAI(
-    # defaults to os.environ.get("OPENAI_API_KEY")
-    api_key=OPENAI_API_KEY,
-)
-
-
-def analyze_data_with_openai(data, title, x_axis_label, y_axis_label):
+def analyze_data(data, title, x_axis_label, y_axis_label):
     """
     Envia dados e informações do gráfico para análise da I.A..
 
@@ -24,10 +16,15 @@ def analyze_data_with_openai(data, title, x_axis_label, y_axis_label):
     Retorna:
     str: Análise gerada pela I.A..
     """
-    # Converter o DataFrame para uma string CSV
+    api_key = get_api_key()
+    if not api_key:
+        st.error("Chave API não configurada. Por favor, configure a chave API na barra lateral.")
+        return ""
+
+    openai.api_key = api_key
+
     data_csv = data.to_csv(index=False)
 
-    # Mensagem para enviar ao modelo
     prompt = f"""
     O gráfico a seguir foi gerado com os seguintes detalhes:
     - Título: {title}
@@ -40,8 +37,7 @@ def analyze_data_with_openai(data, title, x_axis_label, y_axis_label):
     Por favor, analise esses dados e forneça insights sobre o que eles representam, tendências importantes e quaisquer anomalias notáveis.
     """
 
-    # Enviar a mensagem para a OpenAI
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-0613",
         messages=[
             {"role": "system", "content": "Você é um analista de dados."},
@@ -49,5 +45,4 @@ def analyze_data_with_openai(data, title, x_axis_label, y_axis_label):
         ]
     )
 
-    # Retornar a análise gerada
-    return response.choices[0].message.content.strip()
+    return response.choices[0].message['content'].strip()
