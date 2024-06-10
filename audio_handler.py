@@ -1,5 +1,3 @@
-# audio_handler.py
-
 import sounddevice as sd
 import wave
 import os
@@ -13,16 +11,14 @@ class AudioHandler:
         self.channels = channels
         self.dtype = dtype
         self.audio_data = []
-        self.is_recording = False
 
-    def start_or_stop_recording(self):
-        self.is_recording = not self.is_recording
-        if self.is_recording:
-            print("Starting recording")
-            self.audio_data = []
+    def start_or_stop_recording(self, is_recording):
+        if is_recording:
+            return False
         else:
-            print("Stopping recording")
-        return self.is_recording
+            print("Starting record")
+            self.audio_data = []
+            return True
 
     def save_recording(self):
         print("Saving the recording...")
@@ -30,7 +26,7 @@ class AudioHandler:
             os.remove("temp.wav")
         wav_file = wave.open("test.wav", 'wb')
         wav_file.setnchannels(self.channels)
-        wav_file.setsampwidth(2)
+        wav_file.setsampwidth(2)  # Corrigido para usar a largura de amostra para int16 diretamente
         wav_file.setframerate(self.samplerate)
         wav_file.writeframes(np.array(self.audio_data, dtype=self.dtype))
         wav_file.close()
@@ -47,5 +43,4 @@ class AudioHandler:
             sd.wait()
 
     def callback(self, indata, frame_count, time_info, status):
-        if self.is_recording:
-            self.audio_data.extend(indata.copy())
+        self.audio_data.extend(indata.copy())
