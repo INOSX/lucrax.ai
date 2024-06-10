@@ -4,12 +4,14 @@ import plotly.express as px
 import plotly.io as pio
 import io
 import time
-from openai_analyzer import analyze_data_with_openai
 from PIL import Image
 from talking_llm import TalkingLLM
+import neural_network_config as nn_config
+from neural_network_analyzer import analyze_data
+from utils import get_csv_export_url, load_data
 
 def app():
-    st.set_page_config(page_title="dataGPT para Google Drive", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="Visualizador de Dados do Google Drive", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
@@ -19,6 +21,13 @@ def app():
                 </style>
                 """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+    nn_config.select_neural_network()
+    selected_network = nn_config.get_selected_network()
+    api_key = nn_config.get_api_key()
+
+    if selected_network and api_key:
+        st.sidebar.success(f"Usando a rede neural {selected_network} para análises.")
 
     if "show_logo" not in st.session_state:
         st.session_state.show_logo = True
@@ -52,22 +61,10 @@ def app():
     2. Selecione as colunas para os eixos X e Y do gráfico.
     3. Visualize os dados carregados e o gráfico gerado.
     4. Baixe o gráfico gerado como um arquivo HTML.
-    5. Analise os dados com a nossa I.A.
     """)
 
-    def get_csv_export_url(url):
-        file_id = url.split('/')[5]
-        csv_export_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
-        return csv_export_url
-
-    @st.cache_data
-    def load_data(url):
-        csv_url = get_csv_export_url(url)
-        data = pd.read_csv(csv_url)
-        return data
-
     st.sidebar.header('Link do Google Drive')
-    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive e pressione 'ENTER'.")
+    google_drive_link = st.sidebar.text_input("Cole o link do arquivo no Google Drive")
 
     if google_drive_link:
         try:
@@ -129,36 +126,24 @@ def app():
                     mime='text/csv'
                 )
 
-                if 'talking_llm' not in st.session_state:
-                    st.session_state.talking_llm = TalkingLLM()
-
-                if st.button("Analisar Dados com I.A."):
+                if st.button("Analisar Dados com IA"):
                     with st.spinner('Analisando dados...'):
                         try:
-                            analysis = analyze_data_with_openai(data, title, x_axis_label, y_axis_label)
-                            st.session_state.analysis = analysis
-                            st.session_state.audio_converted = False
+                            analysis = analyze_data(data, title, x_axis_label, y_axis_label)
+                            st.subheader("Análise do ChatGPT")
+                            st.write(analysis)
+
+                            tts = TalkingLLM()
+                            tts.add_text_to_queue(analysis)
+
+                            if st.button("Play Análise"):
+                                tts.play_audio()
+
+                            if st.button("Parar Áudio"):
+                                tts.stop_audio()
+
                         except Exception as e:
                             st.error(f"Erro ao analisar dados: {e}")
-
-                if 'analysis' in st.session_state:
-                    st.subheader("Análise da I.A.")
-                    st.write(st.session_state.analysis)
-
-                    if not st.session_state.audio_converted:
-                        if st.button("Convert to Speech"):
-                            with st.spinner('Convertendo texto para áudio...'):
-                                st.session_state.talking_llm.convert_text_to_audio(st.session_state.analysis)
-                                st.session_state.audio_converted = True
-
-                    if st.session_state.audio_converted:
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("Play Análise"):
-                                st.session_state.talking_llm.play_audio()
-                        with col2:
-                            if st.button("Parar Análise"):
-                                st.session_state.talking_llm.stop_audio()
 
         except Exception as e:
             st.error(f"Erro ao carregar os dados: {e}")

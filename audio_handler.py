@@ -1,5 +1,3 @@
-# audio_handler.py
-
 import sounddevice as sd
 import wave
 import os
@@ -7,7 +5,7 @@ import numpy as np
 import soundfile as sf
 import io
 
-class AudioHandler():
+class AudioHandler:
     def __init__(self, samplerate=44100, channels=1, dtype='int16'):
         self.samplerate = samplerate
         self.channels = channels
