@@ -130,7 +130,7 @@ def app():
                     with st.spinner('Analisando dados...'):
                         try:
                             analysis = analyze_data(data, title, x_axis_label, y_axis_label)
-                            st.subheader("Análise do ChatGPT")
+                            st.subheader("Análise da NNeural")
                             st.write(analysis)
 
                             tts = TalkingLLM()
