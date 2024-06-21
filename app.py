@@ -5,10 +5,27 @@ import plotly.io as pio
 import io
 import time
 from PIL import Image
-# from talking_llm import TalkingLLM
-import neural_network_config as nn_config
-from neural_network_analyzer import analyze_data
+import requests
+import config as nn_config  # Atualizar a importação do arquivo de configuração
 from utils import get_csv_export_url, load_data
+
+def send_prompt_to_nneural(api_key, prompt, data):
+    url = "http://93.127.210.77:5000/chat"  # URL da API NNeural
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "prompt": prompt,
+        "data": data.to_dict(orient='records')  # Convertendo o DataFrame em uma lista de dicionários
+    }
+    
+    response = requests.post(url, headers=headers, json=payload)
+    
+    if response.status_code == 200:
+        return response.json().get("response")
+    else:
+        raise Exception(f"Erro na solicitação: {response.status_code}, {response.text}")
 
 def app():
     st.set_page_config(page_title="Visualizador de Dados do Google Drive", layout="wide", initial_sidebar_state="expanded")
@@ -128,8 +145,13 @@ def app():
 
                 if st.button("Analisar Dados com IA"):
                     with st.spinner('Analisando dados...'):
+                        st.session_state['step'] = "Enviando para a NNeural.io"
+                        prompt = f"Analisar os dados de {x_axis_col} vs {y_axis_col} com o título {title}."
+                        st.write(st.session_state['step'])
                         try:
-                            analysis = analyze_data(data, title, x_axis_label, y_axis_label)
+                            analysis = send_prompt_to_nneural(api_key, prompt, data)
+                            st.session_state['step'] = "Aguardando recebimento da resposta"
+                            st.write(st.session_state['step'])
                             st.subheader("Análise da Neural")
                             st.write(analysis)
                         except Exception as e:

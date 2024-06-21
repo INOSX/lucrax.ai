@@ -18,3 +18,7 @@ def select_neural_network():
 
 def get_selected_network():
     return st.session_state.get('neural_network')
+
+# Função para obter a mensagem do sistema
+def get_system_prompt():
+    return "Você é um ciêntista de dados, um engenheiro de dados, um analista de dados e especialista em storytelling de dados, que ajuda empresários a visualizar além dos dados, mas sim as informações de analise, tendências e cenários futuros!"  # Pode ser personalizado conforme necessário
