@@ -5,7 +5,7 @@ import plotly.io as pio
 import io
 import time
 from PIL import Image
-from talking_llm import TalkingLLM
+# from talking_llm import TalkingLLM
 import neural_network_config as nn_config
 from neural_network_analyzer import analyze_data
 from utils import get_csv_export_url, load_data
@@ -130,18 +130,8 @@ def app():
                     with st.spinner('Analisando dados...'):
                         try:
                             analysis = analyze_data(data, title, x_axis_label, y_axis_label)
-                            st.subheader("Análise da NNeural")
+                            st.subheader("Análise da Neural")
                             st.write(analysis)
-
-                            tts = TalkingLLM()
-                            tts.add_text_to_queue(analysis)
-
-                            if st.button("Play Análise"):
-                                tts.play_audio()
-
-                            if st.button("Parar Áudio"):
-                                tts.stop_audio()
-
                         except Exception as e:
                             st.error(f"Erro ao analisar dados: {e}")
 
