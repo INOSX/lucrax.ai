@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 
-# Lista de dependências do requirements.txt
+# Lista de dependências do requirements.txt (removendo pacotes de áudio)
 required_packages = [
     "streamlit",
     "pandas",
@@ -10,15 +10,9 @@ required_packages = [
     "flake8",
     "pillow",
     "openai",
-    "pynput",
-    "sounddevice",
-    "whisper",
     "langchain-openai",
     "langchain",
-    "soundfile",
-    "python-dotenv",
-    "gtts",
-    "pydub"
+    "python-dotenv"
 ]
 
 # Função para instalar dependências
