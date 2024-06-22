@@ -6,18 +6,18 @@ import io
 import time
 from PIL import Image
 import requests
-import config as nn_config  # Atualizar a importação do arquivo de configuração
+import config as nn_config 
 from utils import get_csv_export_url, load_data
 
 def send_prompt_to_nneural(api_key, prompt, data):
-    url = "http://93.127.210.77:5000/chat"  # URL da API NNeural
+    url = "http://93.127.210.77:5000/chat" 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     payload = {
         "prompt": prompt,
-        "data": data.to_dict(orient='records')  # Convertendo o DataFrame em uma lista de dicionários
+        "data": data.to_dict(orient='records')
     }
     
     response = requests.post(url, headers=headers, json=payload)
@@ -152,7 +152,7 @@ def app():
                             analysis = send_prompt_to_nneural(api_key, prompt, data)
                             st.session_state['step'] = "Aguardando recebimento da resposta"
                             st.write(st.session_state['step'])
-                            st.subheader("Análise da Neural")
+                            st.subheader("Análise da IA")
                             st.write(analysis)
                         except Exception as e:
                             st.error(f"Erro ao analisar dados: {e}")
