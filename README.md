@@ -1,4 +1,3 @@
-```
 dataGPT para o Google Drive
 ===========================
 
