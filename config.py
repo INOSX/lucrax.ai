@@ -7,7 +7,7 @@ def get_api_key():
 # Função para selecionar a rede neural e configurar a chave API
 def select_neural_network():
     st.sidebar.header("Configuração da Rede Neural")
-    neural_network = "NNeural"  # Fixar a escolha para NNeural
+    neural_network = "NNeural.io"
     st.sidebar.write(f"Usando a rede neural: {neural_network}")
     api_key = st.sidebar.text_input("Insira a chave API", type="password")
 
