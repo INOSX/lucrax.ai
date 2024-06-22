@@ -1,59 +1,48 @@
-```markdown
-<p align="center">
-  <a href="" rel="noopener">
- <img width=200px height=200px src="images/dataGPT4-480x480.png" alt="Project logo"></a>
-</p>
+```
+dataGPT para o Google Drive
+===========================
 
-<h3 align="center">dataGPT para o Google Drive</h3>
+Status: [![Status](https://img.shields.io/badge/status-active-success.svg)]()
+GitHub Issues: [![GitHub Issues](https://img.shields.io/github/issues/seuusuario/dataGPT.svg)](https://github.com/seuusuario/dataGPT/issues)
+GitHub Pull Requests: [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/seuusuario/dataGPT.svg)](https://github.com/seuusuario/dataGPT/pulls)
+License: [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
-<div align="center">
+Uma aplicação para visualizar dados do Google Sheets compartilhados via Google Drive.
 
-[![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/seuusuario/dataGPT.svg)](https://github.com/seuusuario/dataGPT/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/seuusuario/dataGPT.svg)](https://github.com/seuusuario/dataGPT/pulls)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+Tabela de Conteúdos
+-------------------
 
-</div>
+- Sobre
+- Primeiros Passos
+- Deployment
+- Uso
+- Construído Usando
+- TODO
+- Contribuindo
+- Autores
+- Agradecimentos
 
----
+Sobre
+-----
 
-<p align="center"> Uma aplicação para visualizar dados do Google Sheets compartilhados via Google Drive.
-    <br> 
-</p>
+O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. Você pode inserir um link de compartilhamento de um arquivo Google Sheets, escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
 
-## 📝 Table of Contents
+Primeiros Passos
+----------------
 
-- [About](#about)
-- [Getting Started](#getting_started)
-- [Deployment](#deployment)
-- [Usage](#usage)
-- [Built Using](#built_using)
-- [TODO](../TODO.md)
-- [Contributing](#contributing)
-- [Authors](#authors)
-- [Acknowledgments](#acknowledgement)
+Estas instruções irão ajudá-lo a obter uma cópia do projeto em execução na sua máquina local para fins de desenvolvimento e teste. Consulte a seção "Deployment" para notas sobre como implantar o projeto em um sistema ao vivo.
 
-## 🧐 About <a name = "about"></a>
+### Pré-requisitos
 
-O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
-Você pode inserir um link de compartilhamento de um arquivo Google Sheets, 
-escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
-
-## 🏁 Getting Started <a name = "getting_started"></a>
-
-Estas instruções irão ajudá-lo a obter uma cópia do projeto em execução na sua máquina local para fins de desenvolvimento e teste. Consulte a seção [deployment](#deployment) para notas sobre como implantar o projeto em um sistema ao vivo.
-
-### Prerequisites
-
-As coisas que você precisa para instalar o software e como instalá-las.
+As coisas que você precisa para instalar o software e como instalá-las:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Installing
+### Instalando
 
-Um passo a passo da série de exemplos que informam como obter um ambiente de desenvolvimento em funcionamento.
+Um passo a passo da série de exemplos que informam como obter um ambiente de desenvolvimento em funcionamento:
 
 Clonar o repositório:
 
@@ -70,7 +59,7 @@ pip install -r requirements.txt
 
 ### Configuração do Ambiente
 
-Criar um arquivo `config.py` com as configurações necessárias, incluindo a chave da API e a rede neural selecionada.
+Criar um arquivo `config.py` com as configurações necessárias, incluindo a chave da API e a rede neural selecionada:
 
 ```python
 # config.py
@@ -78,7 +67,8 @@ API_KEY = 'sua_chave_api_aqui'
 NEURAL_NETWORK = 'rede_neural_selecionada'
 ```
 
-## 🎈 Usage <a name="usage"></a>
+Uso
+---
 
 Para executar a aplicação, use o seguinte comando:
 
@@ -88,7 +78,8 @@ streamlit run app.py
 
 Abra o navegador e acesse `http://localhost:8501`.
 
-## 🚀 Deployment <a name = "deployment"></a>
+Deployment
+----------
 
 Para implantar este projeto, siga as etapas abaixo.
 
@@ -109,7 +100,7 @@ sudo nano /etc/nginx/sites-available/dataGPT
 
 Adicione a seguinte configuração:
 
-```nginx
+```
 server {
     listen 80;
     server_name free.datagpt.com.br;
@@ -160,7 +151,7 @@ sudo nano /etc/systemd/system/datagpt.service
 
 Adicione o seguinte conteúdo:
 
-```ini
+```
 [Unit]
 Description=Streamlit instance to serve dataGPT
 After=network.target
@@ -183,20 +174,23 @@ sudo systemctl start datagpt
 sudo systemctl enable datagpt
 ```
 
-## 🔧 Built Using <a name = "built_using"></a>
+Construído Usando
+-----------------
 
 - [Streamlit](https://streamlit.io/) - Framework
 - [Plotly](https://plotly.com/python/) - Biblioteca de Gráficos
 - [Pandas](https://pandas.pydata.org/) - Biblioteca de Análise de Dados
 - [Python](https://www.python.org/) - Linguagem de Programação
 
-## ✍️ Authors <a name = "authors"></a>
+Autores
+-------
 
-- [@seuusuario](https://github.com/seuusuario) - Ideia & Trabalho inicial
+- [@m2f0](https://github.com/m2f0) - Ideia & Trabalho inicial
 
 Veja também a lista de [colaboradores](https://github.com/seuusuario/dataGPT/graphs/contributors) que participaram deste projeto.
 
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
+Agradecimentos
+--------------
 
 - [Streamlit](https://streamlit.io/)
 - [Plotly](https://plotly.com/)
