@@ -6,18 +6,18 @@ import io
 import time
 from PIL import Image
 import requests
-import config as nn_config  # Atualizar a importação do arquivo de configuração
+import config as nn_config  
 from utils import get_csv_export_url, load_data
 
 def send_prompt_to_nneural(api_key, prompt, data):
-    url = "http://93.127.210.77:5000/chat"  # URL da API NNeural
+    url = "http://93.127.210.77:5000/chat"  
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     payload = {
         "prompt": prompt,
-        "data": data.to_dict(orient='records')  # Convertendo o DataFrame em uma lista de dicionários
+        "data": data.to_dict(orient='records')  
     }
     
     response = requests.post(url, headers=headers, json=payload)
@@ -28,7 +28,8 @@ def send_prompt_to_nneural(api_key, prompt, data):
         raise Exception(f"Erro na solicitação: {response.status_code}, {response.text}")
 
 def app():
-    st.set_page_config(page_title="Visualizador de Dados do Google Drive", layout="wide", initial_sidebar_state="expanded")
+    
+    st.set_page_config(page_title="dataGPT para o Google Drive - Versão gratuíta e de código aberto",  page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
@@ -65,7 +66,7 @@ def app():
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
-    st.title("dataGPT para o Google Drive")
+    st.title("dataGPT para o Google Drive - Versão gratuíta e de código aberto")
     st.markdown("""
     ## Descrição
     O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
