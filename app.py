@@ -28,7 +28,8 @@ def send_prompt_to_nneural(api_key, prompt, data):
         raise Exception(f"Erro na solicitação: {response.status_code}, {response.text}")
 
 def app():
-    st.set_page_config(page_title="Visualizador de Dados do Google Drive", layout="wide", initial_sidebar_state="expanded")
+    
+    st.set_page_config(page_title="dataGPT para o Google Drive - Versão gratuíta e de código aberto",  page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
@@ -65,7 +66,7 @@ def app():
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
-    st.title("dataGPT para o Google Drive")
+    st.title("dataGPT para o Google Drive - Versão gratuíta e de código aberto")
     st.markdown("""
     ## Descrição
     O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
