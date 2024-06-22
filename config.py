@@ -7,7 +7,7 @@ def get_api_key():
 # Função para selecionar a rede neural e configurar a chave API
 def select_neural_network():
     st.sidebar.header("Configuração da Rede Neural")
-    neural_network = "NNeural"  # Fixar a escolha para NNeural
+    neural_network = "NNeural.io"
     st.sidebar.write(f"Usando a rede neural: {neural_network}")
     api_key = st.sidebar.text_input("Insira a chave API", type="password")
 
@@ -21,4 +21,4 @@ def get_selected_network():
 
 # Função para obter a mensagem do sistema
 def get_system_prompt():
-    return "Você é um ciêntista de dados, um engenheiro de dados, um analista de dados e especialista em storytelling de dados, que ajuda empresários a visualizar além dos dados, mas sim as informações de analise, tendências e cenários futuros!"  # Pode ser personalizado conforme necessário
+    return "Digite aqui o seu prompt."  # Pode ser personalizado conforme necessário
