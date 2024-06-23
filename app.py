@@ -30,29 +30,26 @@ def send_prompt_to_nneural(api_key, prompt, data):
 def format_response(template, analysis):
     if template == "Template 1":
         return f"""
-        # Relatório de Análise de Dados
-
-        ## Resumo da Análise
-        {analysis}
-
-        ## Conclusão
-        Esta análise foi realizada usando o Template 1.
+        <div style='font-family: Arial, sans-serif; padding: 20px;' id='analysis'>
+            <h1 style='text-align: center;'>Relatório de Análise de Dados</h1>
+            <h2>Resumo da Análise</h2>
+            <p>{analysis}</p>
+        </div>
         """
     elif template == "Template 2":
         return f"""
-        # Data Analysis Report
-
-        ### Analysis Summary
-        {analysis}
-
-        ### Conclusion
-        This analysis was done using Template 2.
+        <div style='font-family: Arial, sans-serif; padding: 20px;' id='analysis'>
+            <h1 style='text-align: center;'>Data Analysis Report</h1>
+            <h3>Analysis Summary</h3>
+            <p>{analysis}</p>
+        </div>
         """
     else:
         return f"""
-        # Report
-
-        {analysis}
+        <div style='font-family: Arial, sans-serif; padding: 20px;' id='analysis'>
+            <h1 style='text-align: center;'>Report</h1>
+            <p>{analysis}</p>
+        </div>
         """
 
 def app():
@@ -189,7 +186,7 @@ def app():
                             st.write(st.session_state['step'])
                             st.subheader("Análise da IA")
                             formatted_analysis = format_response(selected_template, analysis)
-                            st.markdown(formatted_analysis)
+                            st.markdown(f"<div style='border: 1px solid black; padding: 20px;' id='analysis-container'>{formatted_analysis}</div>", unsafe_allow_html=True)
                         except Exception as e:
                             st.error(f"Erro ao analisar dados: {e}")
 
