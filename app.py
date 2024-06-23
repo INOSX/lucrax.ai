@@ -29,7 +29,7 @@ def send_prompt_to_nneural(api_key, prompt, data):
 
 def app():
     
-    st.set_page_config(page_title="dataGPT para o Google Drive - Versão gratuíta e de código aberto",  page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="dataGPT para o Google Drive - Versão gratuita e de código aberto", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
@@ -66,7 +66,7 @@ def app():
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
-    st.title("dataGPT para o Google Drive - Versão gratuíta e de código aberto")
+    st.title("dataGPT para o Google Drive - Versão gratuita e de código aberto")
     st.markdown("""
     ## Descrição
     O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
@@ -93,10 +93,12 @@ def app():
             st.sidebar.header('Filtros')
             columns = data.columns.tolist()
             filters = {}
+            
             for column in columns:
                 unique_values = data[column].unique().tolist()
-                selected_values = st.sidebar.multiselect(f'Selecione valores para {column}', unique_values, default=unique_values)
-                filters[column] = selected_values
+                with st.sidebar.expander(f'Filtros para {column}', expanded=False):
+                    selected_values = st.multiselect(f'Selecione valores para {column}', unique_values, default=unique_values)
+                    filters[column] = selected_values
 
             for column, selected_values in filters.items():
                 data = data[data[column].isin(selected_values)]
