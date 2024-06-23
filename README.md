@@ -11,15 +11,15 @@ Uma aplicação para visualizar dados do Google Sheets compartilhados via Google
 Tabela de Conteúdos
 -------------------
 
-- Sobre
-- Primeiros Passos
-- Deployment
-- Uso
-- Construído Usando
-- TODO
-- Contribuindo
-- Autores
-- Agradecimentos
+- [Sobre](#sobre)
+- [Primeiros Passos](#primeiros-passos)
+- [Deployment](#deployment)
+- [Uso](#uso)
+- [Construído Usando](#construído-usando)
+- [TODO](#todo)
+- [Contribuindo](#contribuindo)
+- [Autores](#autores)
+- [Agradecimentos](#agradecimentos)
 
 Sobre
 -----
@@ -40,7 +40,6 @@ pip install -r requirements.txt
 ```
 
 ### Instalando
-
 Um passo a passo da série de exemplos que informam como obter um ambiente de desenvolvimento em funcionamento:
 
 Clonar o repositório:
@@ -52,13 +51,12 @@ cd dataGPT
 
 Instalar as dependências:
 
-```sh
+```
 pip install -r requirements.txt
 ```
 
 ### Configuração do Ambiente
-
-Criar um arquivo `config.py` com as configurações necessárias, incluindo a chave da API e a rede neural selecionada:
+Criar um arquivo config.py com as configurações necessárias, incluindo a chave da API e a rede neural selecionada:
 
 ```python
 # config.py
@@ -66,24 +64,19 @@ API_KEY = 'sua_chave_api_aqui'
 NEURAL_NETWORK = 'rede_neural_selecionada'
 ```
 
-Uso
----
-
+### Uso
 Para executar a aplicação, use o seguinte comando:
 
 ```sh
 streamlit run app.py
 ```
 
-Abra o navegador e acesse `http://localhost:8501`.
+Abra o navegador e acesse http://localhost:8501.
 
-Deployment
-----------
-
+### Deployment
 Para implantar este projeto, siga as etapas abaixo.
 
-### Configuração do Nginx
-
+Configuração do Nginx
 1. Instale o Nginx:
 
 ```sh
@@ -99,7 +92,7 @@ sudo nano /etc/nginx/sites-available/dataGPT
 
 Adicione a seguinte configuração:
 
-```
+```bash
 server {
     listen 80;
     server_name free.datagpt.com.br;
@@ -148,9 +141,13 @@ Crie um serviço systemd para garantir que a aplicação inicie automaticamente:
 sudo nano /etc/systemd/system/datagpt.service
 ```
 
+```sh
+sudo nano /etc/systemd/system/datagpt.service
+```
+
 Adicione o seguinte conteúdo:
 
-```
+```makefile
 [Unit]
 Description=Streamlit instance to serve dataGPT
 After=network.target
@@ -173,26 +170,30 @@ sudo systemctl start datagpt
 sudo systemctl enable datagpt
 ```
 
-Construído Usando
------------------
+### Construído Usando
+[Streamlit](https://streamlit.io/) - Framework 
+[Plotly](https://plotly.com/python/) - Biblioteca de Gráficos
+[Pandas](https://pandas.pydata.org/) - Biblioteca de Análise de Dados
+[Python](https://www.python.org/) - Linguagem de Programação
 
-- [Streamlit](https://streamlit.io/) - Framework
-- [Plotly](https://plotly.com/python/) - Biblioteca de Gráficos
-- [Pandas](https://pandas.pydata.org/) - Biblioteca de Análise de Dados
-- [Python](https://www.python.org/) - Linguagem de Programação
+### TODO
+ 
+ - Adicionar mais tipos de gráficos
+ - Melhorar a interface de usuário
+ - Implementar autenticação de usuário
+
+### Contribuindo
+
+Por favor, leia nosso Guia de Contribuição para detalhes sobre nosso código de conduta e o processo para enviar pull requests para nós.
 
 Autores
--------
+[@m2f](https://github.com/m2f0) - Ideia & Trabalho inicial
 
-- [@m2f0](https://github.com/m2f0) - Ideia & Trabalho inicial
+### Agradecimentos
 
-Veja também a lista de [colaboradores](https://github.com/seuusuario/dataGPT/graphs/contributors) que participaram deste projeto.
+[Streamlit](https://streamlit.io/)
+[Plotly](https://plotly.com/python/)
+[Pandas](https://pandas.pydata.org/)
+[GitHub](https://www.python.org/)
 
-Agradecimentos
---------------
 
-- [Streamlit](https://streamlit.io/)
-- [Plotly](https://plotly.com/)
-- [Pandas](https://pandas.pydata.org/)
-- [GitHub](https://github.com/)
-```
