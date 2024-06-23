@@ -27,6 +27,34 @@ def send_prompt_to_nneural(api_key, prompt, data):
     else:
         raise Exception(f"Erro na solicitação: {response.status_code}, {response.text}")
 
+def format_response(template, analysis):
+    if template == "Template 1":
+        return f"""
+        # Relatório de Análise de Dados
+
+        ## Resumo da Análise
+        {analysis}
+
+        ## Conclusão
+        Esta análise foi realizada usando o Template 1.
+        """
+    elif template == "Template 2":
+        return f"""
+        # Data Analysis Report
+
+        ### Analysis Summary
+        {analysis}
+
+        ### Conclusion
+        This analysis was done using Template 2.
+        """
+    else:
+        return f"""
+        # Report
+
+        {analysis}
+        """
+
 def app():
     
     st.set_page_config(page_title="dataGPT para o Google Drive - Versão gratuita e de código aberto", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
@@ -146,6 +174,10 @@ def app():
                     mime='text/csv'
                 )
 
+                st.sidebar.header('Configuração do Relatório')
+                templates = ["Template 1", "Template 2", "Template 3"]
+                selected_template = st.sidebar.selectbox("Selecione o template do relatório", templates)
+
                 if st.button("Analisar Dados com IA"):
                     with st.spinner('Analisando dados...'):
                         st.session_state['step'] = "Enviando para a NNeural.io"
@@ -156,7 +188,8 @@ def app():
                             st.session_state['step'] = "Aguardando recebimento da resposta"
                             st.write(st.session_state['step'])
                             st.subheader("Análise da IA")
-                            st.write(analysis)
+                            formatted_analysis = format_response(selected_template, analysis)
+                            st.markdown(formatted_analysis)
                         except Exception as e:
                             st.error(f"Erro ao analisar dados: {e}")
 
