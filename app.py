@@ -54,7 +54,7 @@ def format_response(template, analysis):
 
 def app():
     
-    st.set_page_config(page_title="dataGPT para o Google Drive - Versão gratuita e de código aberto", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="dataGPT v2.3.6", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
@@ -91,10 +91,10 @@ def app():
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
-    st.title("dataGPT para o Google Drive - Versão gratuita e de código aberto")
+    st.title("dataGPT v2.3.6 - Gratuito e de código aberto")
     st.markdown("""
     ## Descrição
-    O dataGPT para o Google Drive permite visualizar dados compartilhados via Google Drive. 
+    O dataGPT v2.3.6 permite visualizar dados compartilhados via Google Drive. 
     Você pode inserir um link de compartilhamento de um arquivo Google Sheets, 
     escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
     Além disso, você pode utilizar inteligência artificial para analisar os gráficos gerados.
