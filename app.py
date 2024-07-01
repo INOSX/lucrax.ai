@@ -87,7 +87,7 @@ def app():
             st.write("")
         with col3:
             st.write("")
-        time.sleep(2)
+        time.sleep(3)
         st.session_state.show_logo = False
         st.experimental_rerun()
 
@@ -135,6 +135,7 @@ def app():
             x_axis_col = st.sidebar.selectbox("Selecione a coluna para o eixo X", data.columns)
             y_axis_col = st.sidebar.selectbox("Selecione a coluna para o eixo Y", data.columns)
 
+            show_totals = st.sidebar.checkbox("Mostrar total acima das colunas", value=False)
             chart_type = st.sidebar.selectbox("Selecione o tipo de gráfico", ['Linha', 'Barra', 'Dispersão', 'Histograma', 'Boxplot', 'Heatmap', 'Áreas', 'Violino'])
 
             st.sidebar.header('Personalização do Gráfico')
@@ -146,12 +147,18 @@ def app():
             if x_axis_col and y_axis_col:
                 if chart_type == 'Linha':
                     fig = px.line(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    if show_totals:
+                        fig.update_traces(texttemplate='%{y}', textposition='top center')
                     st.plotly_chart(fig, use_container_width=True)
                 elif chart_type == 'Barra':
                     fig = px.bar(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    if show_totals:
+                        fig.update_traces(texttemplate='%{y}', textposition='outside')
                     st.plotly_chart(fig, use_container_width=True)
                 elif chart_type == 'Dispersão':
                     fig = px.scatter(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    if show_totals:
+                        fig.update_traces(texttemplate='%{y}', textposition='top center')
                     st.plotly_chart(fig, use_container_width=True)
                 elif chart_type == 'Histograma':
                     fig, ax = plt.subplots()
@@ -159,6 +166,10 @@ def app():
                     ax.set_title(title)
                     ax.set_xlabel(x_axis_label)
                     ax.set_ylabel(y_axis_label)
+                    if show_totals:
+                        totals = data[y_axis_col].value_counts()
+                        for i, v in enumerate(totals):
+                            ax.text(i, v + 0.5, str(v), ha='center')
                     st.pyplot(fig)
                 elif chart_type == 'Boxplot':
                     fig, ax = plt.subplots()
@@ -174,6 +185,8 @@ def app():
                     st.pyplot(fig)
                 elif chart_type == 'Áreas':
                     fig = px.area(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    if show_totals:
+                        fig.update_traces(texttemplate='%{y}', textposition='top center')
                     st.plotly_chart(fig, use_container_width=True)
                 elif chart_type == 'Violino':
                     fig, ax = plt.subplots()
@@ -218,7 +231,8 @@ def app():
                             "title": title,
                             "x_axis_label": x_axis_label,
                             "y_axis_label": y_axis_label,
-                            "color": color
+                            "color": color,
+                            "show_totals": show_totals
                         }
                         
                         try:
