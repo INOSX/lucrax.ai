@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
+import matplotlib.pyplot as plt
+import seaborn as sns
 import io
 import time
 from PIL import Image
@@ -9,7 +11,7 @@ import requests
 import config as nn_config 
 from utils import get_csv_export_url, load_data
 
-def send_prompt_to_nneural(api_key, prompt, data):
+def send_prompt_to_nneural(api_key, prompt, data, chart_info):
     url = "http://93.127.210.77:5000/chat" 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -17,7 +19,8 @@ def send_prompt_to_nneural(api_key, prompt, data):
     }
     payload = {
         "prompt": prompt,
-        "data": data.to_dict(orient='records')
+        "data": data.to_dict(orient='records'),
+        "chart_info": chart_info
     }
     
     response = requests.post(url, headers=headers, json=payload)
@@ -79,12 +82,12 @@ def app():
         logo = Image.open("images/dataGPT4-480x480.png")
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.write("")
-        with col2:
             st.image(logo, width=480, use_column_width=False)
+        with col2:
+            st.write("")
         with col3:
             st.write("")
-        time.sleep(3)
+        time.sleep(2)
         st.session_state.show_logo = False
         st.experimental_rerun()
 
@@ -132,7 +135,7 @@ def app():
             x_axis_col = st.sidebar.selectbox("Selecione a coluna para o eixo X", data.columns)
             y_axis_col = st.sidebar.selectbox("Selecione a coluna para o eixo Y", data.columns)
 
-            chart_type = st.sidebar.selectbox("Selecione o tipo de gráfico", ['Linha', 'Barra', 'Dispersão'])
+            chart_type = st.sidebar.selectbox("Selecione o tipo de gráfico", ['Linha', 'Barra', 'Dispersão', 'Histograma', 'Boxplot', 'Heatmap', 'Áreas', 'Violino'])
 
             st.sidebar.header('Personalização do Gráfico')
             title = st.sidebar.text_input("Título do Gráfico", value=f"Gráfico de {x_axis_col} vs {y_axis_col}")
@@ -142,26 +145,55 @@ def app():
 
             if x_axis_col and y_axis_col:
                 if chart_type == 'Linha':
-                    fig = px.line(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label})
+                    fig = px.line(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    st.plotly_chart(fig, use_container_width=True)
                 elif chart_type == 'Barra':
-                    fig = px.bar(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label})
+                    fig = px.bar(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    st.plotly_chart(fig, use_container_width=True)
                 elif chart_type == 'Dispersão':
-                    fig = px.scatter(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label})
-                
-                fig.update_traces(marker=dict(color=color))
+                    fig = px.scatter(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    st.plotly_chart(fig, use_container_width=True)
+                elif chart_type == 'Histograma':
+                    fig, ax = plt.subplots()
+                    ax.hist(data[y_axis_col], bins=30, color=color)
+                    ax.set_title(title)
+                    ax.set_xlabel(x_axis_label)
+                    ax.set_ylabel(y_axis_label)
+                    st.pyplot(fig)
+                elif chart_type == 'Boxplot':
+                    fig, ax = plt.subplots()
+                    sns.boxplot(x=data[x_axis_col], y=data[y_axis_col], ax=ax, color=color)
+                    ax.set_title(title)
+                    ax.set_xlabel(x_axis_label)
+                    ax.set_ylabel(y_axis_label)
+                    st.pyplot(fig)
+                elif chart_type == 'Heatmap':
+                    fig, ax = plt.subplots()
+                    sns.heatmap(data.corr(), annot=True, cmap='coolwarm', ax=ax)
+                    ax.set_title(title)
+                    st.pyplot(fig)
+                elif chart_type == 'Áreas':
+                    fig = px.area(data, x=x_axis_col, y=y_axis_col, title=title, labels={x_axis_col: x_axis_label, y_axis_col: y_axis_label}, color_discrete_sequence=[color])
+                    st.plotly_chart(fig, use_container_width=True)
+                elif chart_type == 'Violino':
+                    fig, ax = plt.subplots()
+                    sns.violinplot(x=data[x_axis_col], y=data[y_axis_col], ax=ax, color=color)
+                    ax.set_title(title)
+                    ax.set_xlabel(x_axis_label)
+                    ax.set_ylabel(y_axis_label)
+                    st.pyplot(fig)
 
-                st.plotly_chart(fig, use_container_width=True)
+                if chart_type in ['Linha', 'Barra', 'Dispersão', 'Áreas']:
+                    buffer = io.StringIO()
+                    pio.write_html(fig, buffer)
+                    html_bytes = buffer.getvalue().encode()
 
-                buffer = io.StringIO()
-                pio.write_html(fig, buffer)
-                html_bytes = buffer.getvalue().encode()
-
-                st.download_button(
-                    label="Baixar Gráfico como HTML",
-                    data=html_bytes,
-                    file_name='grafico.html',
-                    mime='text/html'
-                )
+                    st.download_button(
+                        label="Baixar Gráfico como HTML",
+                        data=html_bytes,
+                        file_name='grafico.html',
+                        mime='text/html'
+                    )
 
                 csv = data.to_csv(index=False)
                 st.download_button(
@@ -180,8 +212,17 @@ def app():
                         st.session_state['step'] = "Enviando para a NNeural.io"
                         prompt = f"Analisar os dados de {x_axis_col} vs {y_axis_col} com o título {title}."
                         st.write(st.session_state['step'])
+                        
+                        chart_info = {
+                            "chart_type": chart_type,
+                            "title": title,
+                            "x_axis_label": x_axis_label,
+                            "y_axis_label": y_axis_label,
+                            "color": color
+                        }
+                        
                         try:
-                            analysis = send_prompt_to_nneural(api_key, prompt, data)
+                            analysis = send_prompt_to_nneural(api_key, prompt, data, chart_info)
                             st.session_state['step'] = "Aguardando recebimento da resposta"
                             st.write(st.session_state['step'])
                             st.subheader("Análise da IA")
