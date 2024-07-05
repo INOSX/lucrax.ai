@@ -1,10 +1,9 @@
-
 dataGPT Open Source
 ===================
 
 Status: [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-GitHub Issues: [![GitHub Issues](https://img.shields.io/github/issues/seuusuario/dataGPT.svg)](https://github.com/seuusuario/dataGPT/issues)
-GitHub Pull Requests: [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/seuusuario/dataGPT.svg)](https://github.com/seuusuario/dataGPT/pulls)
+GitHub Issues: [![GitHub Issues](https://img.shields.io/github/issues/m2f0/dataGPT.svg)](https://github.com/m2f0/dataGPT/issues)
+GitHub Pull Requests: [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/m2f0/dataGPT.svg)](https://github.com/m2f0/dataGPT/pulls)
 License: [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
 Uma aplicação open source para visualizar e analisar dados do Google Sheets compartilhados via Google Drive.
@@ -50,8 +49,7 @@ Temos o prazer de anunciar o lançamento da versão 2.3.8 do dataGPT, nossa apli
    - **Correção de Erros de Autenticação:** Solução de problemas de autenticação que impediam o envio de dados para análise pela NNeural.io.
    - **Melhoria no Tratamento de Erros:** Implementação de melhores mensagens de erro e tratamento de exceções para tornar a depuração mais fácil e eficaz.
 
-Tabela de Conteúdos
--------------------
+## Tabela de Conteúdos
 
 - [Sobre](#sobre)
 - [Primeiros Passos](#primeiros-passos)
@@ -62,13 +60,11 @@ Tabela de Conteúdos
 - [Autores](#autores)
 - [Agradecimentos](#agradecimentos)
 
-Sobre
------
+## Sobre
 
 O dataGPT open source permite visualizar dados compartilhados via Google Drive. Você pode inserir um link de compartilhamento de um arquivo Google Sheets, escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente. Além disso, é possível utilizar inteligência artificial para analisar os gráficos gerados.
 
-Primeiros Passos
-----------------
+## Primeiros Passos
 
 Estas instruções irão ajudá-lo a obter uma cópia do projeto em execução na sua máquina local para fins de desenvolvimento e teste.
 
@@ -80,20 +76,20 @@ As coisas que você precisa para instalar o software e como instalá-las:
 pip install -r requirements.txt
 ```
 
-### Instalando
-
+Instalando
 Um passo a passo da série de exemplos que informam como obter um ambiente de desenvolvimento em funcionamento:
 
-Clonar o repositório:
+### Clonar o repositório:
 
-```sh
+```bash
 git clone https://github.com/seuusuario/dataGPT.git
+
 cd dataGPT
 ```
 
-Instalar as dependências:
+### Instalar as dependências:
 
-```sh
+```bash
 pip install -r requirements.txt
 ```
 
@@ -101,75 +97,102 @@ pip install -r requirements.txt
 
 Criar um arquivo config.py com as configurações necessárias, incluindo a chave da API e a rede neural selecionada:
 
-```python
+```bash
 # config.py
 API_KEY = 'sua_chave_api_aqui'
 NEURAL_NETWORK = 'rede_neural_selecionada'
 ```
 
-Uso
-----
+### Uso
 
 Para executar a aplicação, use o seguinte comando:
 
-```sh
+```bash
 streamlit run app.py
 ```
 
-Abra o navegador e acesse [http://localhost:8501](http://localhost:8501).
+Abra o navegador e acesse http://localhost:8501.
 
 ### Como usar:
 
-1. **Insira o link do arquivo Google Sheets compartilhado:**
-   - Cole o link do arquivo no campo apropriado na barra lateral.
-   
-2. **Selecione as colunas para os eixos X e Y do gráfico:**
-   - Escolha as colunas desejadas nos menus suspensos.
+Insira o link do arquivo Google Sheets compartilhado:
 
-3. **Personalize o gráfico:**
-   - Selecione o tipo de gráfico (Linha, Barra, Dispersão, etc.).
-   - Opte por mostrar ou não os totais acima das colunas.
-   - Defina o título do gráfico e os rótulos dos eixos.
-   - Escolha a cor desejada para o gráfico.
+Cole o link do arquivo no campo apropriado na barra lateral.
+Selecione as colunas para os eixos X e Y do gráfico:
 
-4. **Visualize os dados carregados e o gráfico gerado:**
-   - Veja uma prévia dos dados carregados e do gráfico na interface principal.
+Escolha as colunas desejadas nos menus suspensos.
+Personalize o gráfico:
 
-5. **Baixe o gráfico gerado como um arquivo HTML:**
-   - Clique no botão de download para obter o gráfico em formato HTML.
+Selecione o tipo de gráfico (Linha, Barra, Dispersão, etc.).
+Opte por mostrar ou não os totais acima das colunas.
+Defina o título do gráfico e os rótulos dos eixos.
+Escolha a cor desejada para o gráfico.
+Visualize os dados carregados e o gráfico gerado:
 
-6. **Análise de dados com IA:**
-   - Clique no botão "Analisar Dados com IA" para enviar os dados e o gráfico para análise.
+Veja uma prévia dos dados carregados e do gráfico na interface principal.
+Baixe o gráfico gerado como um arquivo HTML:
 
-Construído Usando
------------------
+Clique no botão de download para obter o gráfico em formato HTML.
+Análise de dados com IA:
 
-- [Streamlit](https://streamlit.io/) - Framework
-- [Plotly](https://plotly.com/python/) - Biblioteca de Gráficos
-- [Pandas](https://pandas.pydata.org/) - Biblioteca de Análise de Dados
-- [Python](https://www.python.org/) - Linguagem de Programação
+Clique no botão "Analisar Dados com IA" para enviar os dados e o gráfico para análise.
 
-TODO
-----
+### Usando a Imagem Docker
 
-- Adicionar mais tipos de gráficos
-- Melhorar a interface de usuário
-- Implementar autenticação de usuário
+Você pode utilizar a imagem Docker dataGPT disponibilizada no GitHub Container Registry para rodar a aplicação em qualquer ambiente que suporte Docker. Siga as instruções abaixo para autenticar, puxar e executar a imagem.
 
+### Passos
+Autenticação no GitHub Container Registry
+
+Primeiro, você precisa se autenticar no GitHub Container Registry. Utilize seu Personal Access Token (PAT) do GitHub.
+
+```bash
+echo YOUR_GITHUB_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+Substitua YOUR_GITHUB_PAT pelo token que você gerou e YOUR_GITHUB_USERNAME pelo seu nome de usuário do GitHub.
+
+### Puxar a Imagem Docker
+
+Utilize o comando docker pull para puxar a imagem do GitHub Container Registry.
+
+```bash
+docker pull ghcr.io/m2f0/datagpt:latest
+```
+### Executar a Imagem Docker
+
+Depois de puxar a imagem, você pode executá-la como um container Docker
+
+```bash
+docker run -p 8501:8501 ghcr.io/m2f0/datagpt:latest
+```
+
+Isso irá mapear a porta 8501 do host para a porta 8501 do container, permitindo que você acesse a aplicação no seu navegador em http://localhost:8501.
+
+- Construído Usando
+Streamlit - Framework
+- Plotly - Biblioteca de Gráficos
+- Pandas - Biblioteca de Análise de Dados
+- Python - Linguagem de Programação
+- Matplotlib - Biblioteca de Gráficos
+- Seaborn - Biblioteca de Gráficos
+
+### TODO
+
+Adicionar mais tipos de gráficos
+Melhorar a interface de usuário
+Implementar autenticação de usuário
 Contribuindo
-------------
-
 Por favor, leia nosso Guia de Contribuição para detalhes sobre nosso código de conduta e o processo para enviar pull requests para nós.
 
-Autores
--------
+### Autores
+@m2f0 - Ideia & Trabalho inicial
 
-- [@m2f](https://github.com/m2f0) - Ideia & Trabalho inicial
+### Agradecimentos
+Streamlit
 
-Agradecimentos
---------------
+Plotly
 
-- [Streamlit](https://streamlit.io/)
-- [Plotly](https://plotly.com/python/)
-- [Pandas](https://pandas.pydata.org/)
-- [GitHub](https://www.python.org/)
+Pandas
+
+GitHub
