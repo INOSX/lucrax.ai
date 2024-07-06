@@ -107,6 +107,7 @@ def app():
     2. Selecione as colunas para os eixos X e Y do gráfico.
     3. Visualize os dados carregados e o gráfico gerado.
     4. Baixe o gráfico gerado como um arquivo HTML.
+    5. Solicite a analise da Inteligência Artificial.            
     """)
 
     st.sidebar.header('Link do Google Drive')
