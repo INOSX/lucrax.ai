@@ -57,7 +57,7 @@ def format_response(template, analysis):
 
 def app():
     
-    st.set_page_config(page_title="dataGPT v2.3.6", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="dataGPT v2.3.8", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
