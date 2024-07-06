@@ -94,10 +94,10 @@ def app():
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
-    st.title("dataGPT v2.3.6 - Gratuito e de código aberto")
+    st.title("dataGPT v2.3.8 - Gratuito e de código aberto")
     st.markdown("""
     ## Descrição
-    O dataGPT v2.3.6 permite visualizar dados compartilhados via Google Drive. 
+    O dataGPT v2.3.8 permite visualizar dados compartilhados via Google Drive. 
     Você pode inserir um link de compartilhamento de um arquivo Google Sheets, 
     escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
     Além disso, você pode utilizar inteligência artificial para analisar os gráficos gerados.
