@@ -5,11 +5,15 @@ import plotly.io as pio
 import matplotlib.pyplot as plt
 import seaborn as sns
 import io
-import time
 from PIL import Image
 import requests
-import config as nn_config 
+from dotenv import load_dotenv
+import os
 from utils import get_csv_export_url, load_data
+
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
+api_key = os.getenv("NNEURAL_API_KEY")
 
 def send_prompt_to_nneural(api_key, prompt, data, chart_info):
     url = "http://93.127.210.77:5000/chat" 
@@ -68,36 +72,18 @@ def app():
                 """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-    nn_config.select_neural_network()
-    selected_network = nn_config.get_selected_network()
-    api_key = nn_config.get_api_key()
+    selected_network = "NNeural.io"
 
-    if selected_network and api_key:
+    if api_key:
         st.sidebar.success(f"Usando a rede neural {selected_network} para análises.")
-
-    if "show_logo" not in st.session_state:
-        st.session_state.show_logo = True
-
-    if st.session_state.show_logo:
-        logo = Image.open("images/dataGPT4-480x480.png")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.image(logo, width=480, use_column_width=False)
-        with col2:
-            st.write("")
-        with col3:
-            st.write("")
-        time.sleep(3)
-        st.session_state.show_logo = False
-        st.experimental_rerun()
 
     logo = Image.open("images/dataGPT4-480x480.png")
     st.image(logo, width=128, use_column_width=False)
 
-    st.title("dataGPT v2.3.8 - Gratuito e de código aberto")
+    st.title("dataGPT v2.6 - Gratuito e de código aberto")
     st.markdown("""
     ## Descrição
-    O dataGPT v2.3.8 permite visualizar dados compartilhados via Google Drive. 
+    O dataGPT v2.6 permite visualizar dados compartilhados via Google Drive. 
     Você pode inserir um link de compartilhamento de um arquivo Google Sheets, 
     escolher as colunas para os eixos X e Y de um gráfico, e visualizar os dados e o gráfico interativamente.
     Além disso, você pode utilizar inteligência artificial para analisar os gráficos gerados.
@@ -218,14 +204,12 @@ def app():
                 )
 
                 st.sidebar.header('Configuração do Relatório')
-                templates = ["Template 1", "Template 2", "Template 3"]
+                templates = ["Template 1", "Template 2"]
                 selected_template = st.sidebar.selectbox("Selecione o template do relatório", templates)
 
                 if st.button("Analisar Dados com IA"):
                     with st.spinner('Analisando dados...'):
-                        st.session_state['step'] = "Enviando para a NNeural.io"
                         prompt = f"Analisar os dados de {x_axis_col} vs {y_axis_col} com o título {title}."
-                        st.write(st.session_state['step'])
                         
                         chart_info = {
                             "chart_type": chart_type,
@@ -238,8 +222,6 @@ def app():
                         
                         try:
                             analysis = send_prompt_to_nneural(api_key, prompt, data, chart_info)
-                            st.session_state['step'] = "Aguardando recebimento da resposta"
-                            st.write(st.session_state['step'])
                             st.subheader("Análise da IA")
                             formatted_analysis = format_response(selected_template, analysis)
                             st.markdown(f"<div style='border: 1px solid black; padding: 20px;' id='analysis-container'>{formatted_analysis}</div>", unsafe_allow_html=True)
