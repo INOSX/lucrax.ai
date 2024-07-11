@@ -6,48 +6,59 @@ GitHub Issues: [![GitHub Issues](https://img.shields.io/github/issues/m2f0/dataG
 GitHub Pull Requests: [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/m2f0/dataGPT.svg)](https://github.com/m2f0/dataGPT/pulls)
 License: [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
+
 Uma aplicação open source para visualizar e analisar dados do Google Sheets compartilhados via Google Drive.
 
-## Lançamento da Nova Versão do dataGPT 2.3.8
+## Lançamento da Nova Versão do dataGPT 2.6
 
-Temos o prazer de anunciar o lançamento da versão 2.3.8 do dataGPT, nossa aplicação open source para visualização e análise de dados do Google Sheets compartilhados via Google Drive. Esta nova versão traz uma série de novos recursos e melhorias, além de correções de bugs importantes. 
+Temos o prazer de anunciar o lançamento da versão 2.6 do dataGPT, nossa aplicação open source para visualização e análise de dados do Google Sheets compartilhados via Google Drive. Esta nova versão traz uma série de novos recursos e melhorias, além de correções de bugs importantes.
 
 ### Novos Recursos
 
-1. **Opção de Mostrar Totais nos Gráficos**
-   - Agora é possível mostrar os totais acima das colunas e pontos em gráficos de barra, linha, dispersão e área. Esta funcionalidade permite uma visualização mais clara e imediata dos valores representados.
+#### Opção de Mostrar Totais nos Gráficos
 
-2. **Suporte a Novos Tipos de Gráficos**
-   - Adicionamos suporte a novos tipos de gráficos, incluindo:
-     - Histogramas
-     - Boxplots
-     - Heatmaps
-     - Gráficos de violino
+Agora é possível mostrar os totais acima das colunas e pontos em gráficos de barra, linha, dispersão e área. Esta funcionalidade permite uma visualização mais clara e imediata dos valores representados.
 
-3. **Personalização Aprimorada de Gráficos**
-   - **Escolha de Cores:** Agora é possível escolher a cor dos gráficos diretamente na interface do usuário.
-   - **Labels Customizáveis:** Títulos e rótulos dos eixos podem ser personalizados para melhorar a clareza dos gráficos.
+#### Suporte a Novos Tipos de Gráficos
 
-4. **Análise de Dados com IA**
-   - **Integração com NNeural.io:** Melhoria na integração para enviar dados e gráficos para análise automática, proporcionando insights mais rápidos e precisos.
+Adicionamos suporte a novos tipos de gráficos, incluindo:
+- Histogramas
+- Boxplots
+- Heatmaps
+- Gráficos de violino
 
-5. **Interface de Usuário Melhorada**
-   - **Layout Responsivo:** Melhorias no layout para uma experiência de usuário mais fluida e responsiva.
-   - **Novo Tema:** Implementação de um novo tema visual para tornar a aplicação mais atraente e fácil de usar.
+#### Personalização Aprimorada de Gráficos
+
+- **Escolha de Cores**: Agora é possível escolher a cor dos gráficos diretamente na interface do usuário.
+- **Labels Customizáveis**: Títulos e rótulos dos eixos podem ser personalizados para melhorar a clareza dos gráficos.
+
+#### Análise de Dados com IA
+
+- **Integração com NNeural.io**: Melhoria na integração para enviar dados e gráficos para análise automática, proporcionando insights mais rápidos e precisos.
+
+### Interface de Usuário Melhorada
+
+- **Layout Responsivo**: Melhorias no layout para uma experiência de usuário mais fluida e responsiva.
+- **Novo Tema**: Implementação de um novo tema visual para tornar a aplicação mais atraente e fácil de usar.
 
 ### Bugs Corrigidos
 
-1. **Correção de Bugs de Visualização**
-   - **Correção na Exibição de Gráficos:** Corrigimos problemas onde gráficos não eram exibidos corretamente em determinadas condições.
-   - **Ajuste na Renderização de Totais:** Correção de bugs que impediam a exibição correta dos totais nos gráficos.
+#### Correção de Bugs de Visualização
 
-2. **Melhorias na Carregamento de Dados**
-   - **Correção na Leitura de Links do Google Drive:** Melhoramos a leitura e processamento de links de compartilhamento do Google Drive para evitar falhas de carregamento.
-   - **Desempenho Aprimorado:** Otimização do processo de carregamento de dados, tornando a aplicação mais rápida e eficiente.
+- **Correção na Exibição de Gráficos**: Corrigimos problemas onde gráficos não eram exibidos corretamente em determinadas condições.
+- **Ajuste na Renderização de Totais**: Correção de bugs que impediam a exibição correta dos totais nos gráficos.
 
-3. **Correções de Bugs na Integração com IA**
-   - **Correção de Erros de Autenticação:** Solução de problemas de autenticação que impediam o envio de dados para análise pela NNeural.io.
-   - **Melhoria no Tratamento de Erros:** Implementação de melhores mensagens de erro e tratamento de exceções para tornar a depuração mais fácil e eficaz.
+#### Melhorias na Carregamento de Dados
+
+- **Correção na Leitura de Links do Google Drive**: Melhoramos a leitura e processamento de links de compartilhamento do Google Drive para evitar falhas de carregamento.
+- **Desempenho Aprimorado**: Otimização do processo de carregamento de dados, tornando a aplicação mais rápida e eficiente.
+
+#### Correções de Bugs na Integração com IA
+
+- **Correção de Erros de Autenticação**: Solução de problemas de autenticação que impediam o envio de dados para análise pela NNeural.io.
+- **Melhoria no Tratamento de Erros**: Implementação de melhores mensagens de erro e tratamento de exceções para tornar a depuração mais fácil e eficaz.
+
+
 
 ## Tabela de Conteúdos
 
