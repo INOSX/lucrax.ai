@@ -14,11 +14,31 @@ from utils import get_csv_export_url, load_data
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
 api_key = os.getenv("NNEURAL_API_KEY")
+fixed_user_email = os.getenv("FIXED_USER_EMAIL")
+fixed_user_password = os.getenv("FIXED_USER_PASSWORD")
+api_base_url = os.getenv("API_BASE_URL")
 
-def send_prompt_to_nneural(api_key, prompt, data, chart_info):
-    url = "http://93.127.210.77:5000/chat" 
+def authenticate():
+    url = f"{api_base_url}/login"
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "email": fixed_user_email,
+        "password": fixed_user_password
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    else:
+        raise Exception(f"Erro na autenticação: {response.status_code}, {response.text}")
+
+def send_prompt_to_nneural(api_key, prompt, data, chart_info, token):
+    url = f"{api_base_url}/chat"
+    headers = {
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -60,8 +80,7 @@ def format_response(template, analysis):
         """
 
 def app():
-    
-    st.set_page_config(page_title="dataGPT v2.3.8", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="dataGPT v2.6", page_icon="images/favicon.ico", layout="wide", initial_sidebar_state="expanded")
 
     hide_streamlit_style = """
                 <style>
@@ -89,11 +108,11 @@ def app():
     Além disso, você pode utilizar inteligência artificial para analisar os gráficos gerados.
 
     ### Como usar:
-    1. Insira o link do arquivo Google Sheets compartilhado.
-    2. Selecione as colunas para os eixos X e Y do gráfico.
-    3. Visualize os dados carregados e o gráfico gerado.
-    4. Baixe o gráfico gerado como um arquivo HTML.
-    5. Solicite a analise da Inteligência Artificial.            
+    1 - Insira o link do arquivo Google Sheets compartilhado.
+    2 - Selecione as colunas para os eixos X e Y do gráfico.
+    3 - Visualize os dados carregados e o gráfico gerado.
+    4 - Baixe o gráfico gerado como um arquivo HTML.
+    5 - Solicite a analise da Inteligência Artificial.            
     """)
 
     st.sidebar.header('Link do Google Drive')
@@ -108,7 +127,7 @@ def app():
             st.sidebar.header('Filtros')
             columns = data.columns.tolist()
             filters = {}
-            
+
             for column in columns:
                 unique_values = data[column].unique().tolist()
                 with st.sidebar.expander(f'Filtros para {column}', expanded=False):
@@ -221,7 +240,8 @@ def app():
                         }
                         
                         try:
-                            analysis = send_prompt_to_nneural(api_key, prompt, data, chart_info)
+                            token = authenticate()  # Autentica e obtém o token
+                            analysis = send_prompt_to_nneural(api_key, prompt, data, chart_info, token)
                             st.subheader("Análise da IA")
                             formatted_analysis = format_response(selected_template, analysis)
                             st.markdown(f"<div style='border: 1px solid black; padding: 20px;' id='analysis-container'>{formatted_analysis}</div>", unsafe_allow_html=True)
