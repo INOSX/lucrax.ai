@@ -9,9 +9,29 @@ License: [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENS
 
 Uma aplicação open source para visualizar e analisar dados do Google Sheets compartilhados via Google Drive.
 
-## Lançamento da Nova Versão do dataGPT 2.6
+## Lançamento da Nova Versão do dataGPT 2.6 - Melhorada
 
-Temos o prazer de anunciar o lançamento da versão 2.6 do dataGPT, nossa aplicação open source para visualização e análise de dados do Google Sheets compartilhados via Google Drive. Esta nova versão traz uma série de novos recursos e melhorias, além de correções de bugs importantes.
+Temos o prazer de anunciar o lançamento da versão 2.6 melhorada do dataGPT, nossa aplicação open source para visualização e análise de dados do Google Sheets compartilhados via Google Drive. Esta nova versão traz uma série de novos recursos, melhorias significativas de segurança, validação e organização do código, além de correções de bugs importantes.
+
+### 🚀 Principais Melhorias Implementadas
+
+#### Arquitetura e Organização
+- **Código Consolidado**: Unificação dos arquivos duplicados em uma estrutura modular
+- **Configuração Centralizada**: Todas as configurações em um único arquivo `config.py`
+- **Validação Robusta**: Sistema completo de validação de dados e segurança
+- **Tratamento de Erros**: Melhor tratamento de exceções e mensagens de erro claras
+
+#### Segurança Aprimorada
+- **Validação de Entrada**: Sanitização de URLs e dados de entrada
+- **Validação de API**: Verificação de chaves API e configurações
+- **Proteção XSS**: Sanitização de conteúdo HTML para prevenir ataques
+- **Validação de Dados**: Verificação rigorosa de DataFrames e colunas
+
+#### Performance e Confiabilidade
+- **Cache Inteligente**: Sistema de cache para tokens e análises
+- **Timeouts Configuráveis**: Controle de tempo limite para requisições
+- **Retry Logic**: Lógica de retry para requisições falhadas
+- **Validação de URLs**: Verificação robusta de URLs do Google Sheets
 
 ### Novos Recursos
 
@@ -116,10 +136,45 @@ NEURAL_NETWORK = 'rede_neural_selecionada'
 
 ### Uso
 
-Para executar a aplicação, use o seguinte comando:
+#### Versão Melhorada (Recomendada)
+
+Para executar a versão melhorada da aplicação:
+
+```bash
+# Usando o script de inicialização (recomendado)
+python run_app.py
+
+# Ou diretamente com Streamlit
+streamlit run app_improved.py
+```
+
+#### Versão Original
+
+Para executar a versão original:
 
 ```bash
 streamlit run app.py
+```
+
+#### Script de Inicialização
+
+O script `run_app.py` oferece várias opções:
+
+```bash
+# Verificar dependências e configuração
+python run_app.py --check-only
+
+# Instalar dependências automaticamente
+python run_app.py --install
+
+# Executar testes
+python run_app.py --test
+
+# Usar versão original
+python run_app.py --use-original
+
+# Especificar porta personalizada
+python run_app.py --port 8502
 ```
 
 Abra o navegador e acesse http://localhost:8501.
