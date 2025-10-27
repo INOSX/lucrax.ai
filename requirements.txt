@@ -1,26 +1,10 @@
-# Dependências principais
-streamlit>=1.28.0
+# Dependências para Vercel (otimizadas)
 pandas>=1.5.0
 plotly>=5.15.0
 matplotlib>=3.6.0
 seaborn>=0.12.0
-
-# Processamento de dados e imagens
 pillow>=9.0.0
 requests>=2.28.0
-
-# Configuração e ambiente
 python-dotenv>=0.19.0
-
-# Desenvolvimento e testes
-flake8>=5.0.0
-pytest>=7.0.0
-pytest-cov>=4.0.0
-
-# IA e processamento de linguagem natural
 openai>=1.0.0
-langchain>=0.1.0
-langchain-openai>=0.1.0
-
-# Utilitários
 typing-extensions>=4.0.0
