@@ -1,0 +1,64 @@
+# Arquivos e diretórios a serem ignorados no deploy do Vercel
+
+# Arquivos de desenvolvimento
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Arquivos de teste
+tests/
+test_*.py
+*_test.py
+
+# Arquivos de configuração local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Arquivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de build
+build/
+dist/
+*.egg-info/
+
+# Arquivos de documentação
+*.md
+docs/
+
+# Arquivos de vídeo
+videos/
+
+# Arquivos de imagem grandes
+images/*.png
+images/*.jpg
+images/*.jpeg
+
+# Arquivos de configuração do Streamlit
+.streamlit/
+
+# Arquivos de log
+*.log
+logs/
+
+# Arquivos temporários
+tmp/
+temp/

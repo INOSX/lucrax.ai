@@ -1,0 +1,28 @@
+{
+  "name": "datagpt",
+  "version": "2.6.0",
+  "description": "dataGPT v2.6 - Aplicação de visualização e análise de dados com IA",
+  "main": "api/index.py",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "python -m pip install -r requirements-vercel.txt",
+    "start": "python api/index.py"
+  },
+  "keywords": [
+    "data",
+    "visualization",
+    "ai",
+    "openai",
+    "streamlit",
+    "vercel"
+  ],
+  "author": "Mario Mayerle Filho",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}
