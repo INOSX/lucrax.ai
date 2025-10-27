@@ -1,0 +1,489 @@
+# dataGPT - Regras Supabase
+
+## Configuração do Projeto
+
+### Projeto Ativo
+- **Projeto ID**: `hwfnntgacsebqrprqzzm`
+- **URL**: `https://hwfnntgacsebqrprqzzm.supabase.co`
+- **Status**: ✅ Ativo e funcionando
+
+### Chaves de API
+```python
+SUPABASE_URL = "https://hwfnntgacsebqrprqzzm.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+## Estrutura das Tabelas
+
+### 1. data_sources
+```sql
+CREATE TABLE data_sources (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    source_type TEXT NOT NULL CHECK (source_type IN ('google_sheets', 'csv', 'excel', 'api')),
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+### 2. data_analyses
+```sql
+CREATE TABLE data_analyses (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    data_source_id UUID REFERENCES data_sources(id) ON DELETE CASCADE,
+    analysis_type TEXT NOT NULL CHECK (analysis_type IN ('basic', 'statistical', 'ai_analysis', 'custom')),
+    prompt TEXT,
+    result JSONB NOT NULL,
+    model_used TEXT,
+    processing_time_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    user_session_id TEXT
+);
+```
+
+### 3. chart_configurations
+```sql
+CREATE TABLE chart_configurations (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    chart_type TEXT NOT NULL CHECK (chart_type IN ('line', 'bar', 'scatter', 'area', 'pie', 'histogram', 'box')),
+    x_axis_column TEXT,
+    y_axis_column TEXT,
+    title TEXT,
+    x_axis_label TEXT,
+    y_axis_label TEXT,
+    color_scheme TEXT,
+    show_totals BOOLEAN DEFAULT FALSE,
+    configuration JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### 4. user_sessions
+```sql
+CREATE TABLE user_sessions (
+    id TEXT PRIMARY KEY,
+    user_agent TEXT,
+    ip_address INET,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+### 5. api_usage_logs
+```sql
+CREATE TABLE api_usage_logs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    session_id TEXT REFERENCES user_sessions(id) ON DELETE SET NULL,
+    endpoint TEXT NOT NULL,
+    method TEXT NOT NULL,
+    status_code INTEGER NOT NULL,
+    response_time_ms INTEGER,
+    request_size_bytes INTEGER,
+    response_size_bytes INTEGER,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### 6. imported_data
+```sql
+CREATE TABLE imported_data (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    data_source_id UUID REFERENCES data_sources(id) ON DELETE CASCADE,
+    data JSONB NOT NULL,
+    columns TEXT[] NOT NULL,
+    row_count INTEGER NOT NULL,
+    file_size_bytes INTEGER,
+    import_status TEXT DEFAULT 'success' CHECK (import_status IN ('success', 'partial', 'failed')),
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+## Padrões de Código
+
+### Cliente Supabase
+```python
+class SupabaseClient:
+    """Cliente para interação com Supabase."""
+    
+    def __init__(self):
+        self.client: Optional[Client] = None
+        self.is_available = SUPABASE_AVAILABLE
+        
+        if self.is_available:
+            self._initialize_client()
+    
+    def _initialize_client(self):
+        """Inicializa o cliente Supabase."""
+        try:
+            url = Config.SUPABASE_URL
+            key = Config.SUPABASE_ANON_KEY
+            self.client = create_client(url, key)
+            logger.info("Cliente Supabase inicializado com sucesso")
+        except Exception as e:
+            logger.error(f"Erro ao inicializar cliente Supabase: {e}")
+            self.is_available = False
+    
+    def is_connected(self) -> bool:
+        """Verifica se está conectado ao Supabase."""
+        return self.is_available and self.client is not None
+```
+
+### Operações de Dados
+```python
+def save_data_source(
+    name: str,
+    url: str,
+    source_type: str,
+    description: str = None
+) -> Tuple[bool, Optional[str], Optional[str]]:
+    """Salva uma nova fonte de dados."""
+    if not supabase_client.is_connected():
+        return False, None, "Cliente Supabase não disponível"
+    
+    try:
+        data = {
+            "name": name,
+            "url": url,
+            "source_type": source_type,
+            "description": description
+        }
+        
+        result = supabase_client.client.table("data_sources").insert(data).execute()
+        
+        if result.data:
+            return True, result.data[0]["id"], None
+        else:
+            return False, None, "Erro ao salvar fonte de dados"
+            
+    except Exception as e:
+        logger.error(f"Erro ao salvar fonte de dados: {e}")
+        return False, None, f"Erro ao salvar fonte de dados: {str(e)}"
+```
+
+### Salvamento de Análises
+```python
+def save_analysis(
+    data_source_id: str,
+    analysis_type: str,
+    prompt: str,
+    result: Dict,
+    model_used: str = None,
+    processing_time_ms: int = None,
+    user_session_id: str = None
+) -> Tuple[bool, Optional[str], Optional[str]]:
+    """Salva uma análise realizada."""
+    if not supabase_client.is_connected():
+        return False, None, "Cliente Supabase não disponível"
+    
+    try:
+        data = {
+            "data_source_id": data_source_id,
+            "analysis_type": analysis_type,
+            "prompt": prompt,
+            "result": result,
+            "model_used": model_used,
+            "processing_time_ms": processing_time_ms,
+            "user_session_id": user_session_id
+        }
+        
+        result = supabase_client.client.table("data_analyses").insert(data).execute()
+        
+        if result.data:
+            return True, result.data[0]["id"], None
+        else:
+            return False, None, "Erro ao salvar análise"
+            
+    except Exception as e:
+        logger.error(f"Erro ao salvar análise: {e}")
+        return False, None, f"Erro ao salvar análise: {str(e)}"
+```
+
+## Segurança e RLS
+
+### Row Level Security
+```sql
+-- Habilitar RLS em todas as tabelas
+ALTER TABLE data_sources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE data_analyses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chart_configurations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE api_usage_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE imported_data ENABLE ROW LEVEL SECURITY;
+
+-- Políticas básicas (permitir tudo por enquanto)
+CREATE POLICY "Allow all operations on data_sources" ON data_sources FOR ALL USING (true);
+CREATE POLICY "Allow all operations on data_analyses" ON data_analyses FOR ALL USING (true);
+CREATE POLICY "Allow all operations on chart_configurations" ON chart_configurations FOR ALL USING (true);
+CREATE POLICY "Allow all operations on user_sessions" ON user_sessions FOR ALL USING (true);
+CREATE POLICY "Allow all operations on api_usage_logs" ON api_usage_logs FOR ALL USING (true);
+CREATE POLICY "Allow all operations on imported_data" ON imported_data FOR ALL USING (true);
+```
+
+### Validação de Dados
+```python
+def validate_supabase_data(data: Dict[str, Any], table_name: str) -> Tuple[bool, Optional[str]]:
+    """Valida dados antes de inserir no Supabase."""
+    if not data:
+        return False, "Dados vazios"
+    
+    # Validações específicas por tabela
+    if table_name == "data_sources":
+        required_fields = ["name", "url", "source_type"]
+        if not all(field in data for field in required_fields):
+            return False, "Campos obrigatórios faltando"
+        
+        if not validate_google_sheets_url(data["url"]):
+            return False, "URL inválida"
+    
+    elif table_name == "data_analyses":
+        required_fields = ["analysis_type", "result"]
+        if not all(field in data for field in required_fields):
+            return False, "Campos obrigatórios faltando"
+        
+        if not isinstance(data["result"], dict):
+            return False, "Result deve ser um objeto JSON"
+    
+    return True, None
+```
+
+## Consultas e Relatórios
+
+### Consultas Úteis
+```sql
+-- Análises recentes
+SELECT 
+    da.*,
+    ds.name as source_name,
+    ds.url as source_url
+FROM data_analyses da
+JOIN data_sources ds ON da.data_source_id = ds.id
+ORDER BY da.created_at DESC
+LIMIT 10;
+
+-- Fontes de dados mais usadas
+SELECT 
+    ds.name,
+    ds.url,
+    COUNT(da.id) as analysis_count
+FROM data_sources ds
+LEFT JOIN data_analyses da ON ds.id = da.data_source_id
+GROUP BY ds.id, ds.name, ds.url
+ORDER BY analysis_count DESC;
+
+-- Performance da API
+SELECT 
+    endpoint,
+    method,
+    AVG(response_time_ms) as avg_response_time,
+    COUNT(*) as request_count
+FROM api_usage_logs
+WHERE created_at >= NOW() - INTERVAL '24 hours'
+GROUP BY endpoint, method
+ORDER BY avg_response_time DESC;
+```
+
+### Funções de Recuperação
+```python
+def get_recent_analyses(limit: int = 10) -> Tuple[bool, Optional[List[Dict]], Optional[str]]:
+    """Recupera análises recentes."""
+    if not supabase_client.is_connected():
+        return False, None, "Cliente Supabase não disponível"
+    
+    try:
+        result = supabase_client.client.table("data_analyses")\
+            .select("*, data_sources(name, url)")\
+            .order("created_at", desc=True)\
+            .limit(limit)\
+            .execute()
+        
+        return True, result.data, None
+        
+    except Exception as e:
+        logger.error(f"Erro ao recuperar análises: {e}")
+        return False, None, f"Erro ao recuperar análises: {str(e)}"
+
+def get_data_sources() -> Tuple[bool, Optional[List[Dict]], Optional[str]]:
+    """Recupera todas as fontes de dados."""
+    if not supabase_client.is_connected():
+        return False, None, "Cliente Supabase não disponível"
+    
+    try:
+        result = supabase_client.client.table("data_sources")\
+            .select("*")\
+            .eq("is_active", True)\
+            .order("created_at", desc=True)\
+            .execute()
+        
+        return True, result.data, None
+        
+    except Exception as e:
+        logger.error(f"Erro ao recuperar fontes de dados: {e}")
+        return False, None, f"Erro ao recuperar fontes de dados: {str(e)}"
+```
+
+## Integração com Aplicação
+
+### Carregamento de Dados
+```python
+def handle_load_data_with_supabase(url: str) -> Dict[str, Any]:
+    """Carrega dados e salva no Supabase."""
+    # 1. Carregar dados
+    success, data, error = data_loader.load_data_from_url(url)
+    
+    if not success:
+        return create_error_response(400, error)
+    
+    # 2. Salvar fonte de dados
+    source_success, source_id, source_error = supabase_client.save_data_source(
+        name=f"Google Sheets - {url.split('/')[-1]}",
+        url=url,
+        source_type="google_sheets",
+        description="Dados carregados do Google Sheets"
+    )
+    
+    if not source_success:
+        logger.warning(f"Erro ao salvar fonte: {source_error}")
+    
+    # 3. Salvar dados importados
+    if source_success:
+        data_json = data.to_dict(orient='records')
+        supabase_client.save_imported_data(
+            data_source_id=source_id,
+            data=data_json,
+            columns=data.columns.tolist(),
+            row_count=len(data_json),
+            file_size_bytes=len(json.dumps(data_json).encode('utf-8'))
+        )
+    
+    return create_success_response({
+        "data": data_json,
+        "columns": data.columns.tolist(),
+        "shape": data.shape,
+        "saved_to_db": source_success
+    })
+```
+
+### Análise com IA
+```python
+def handle_analysis_with_supabase(
+    data: pd.DataFrame,
+    chart_config: Dict[str, Any],
+    prompt: str
+) -> Dict[str, Any]:
+    """Realiza análise e salva no Supabase."""
+    # 1. Fazer análise
+    start_time = time.time()
+    success, analysis, error = openai_client.analyze_data(prompt, data, chart_config)
+    processing_time = int((time.time() - start_time) * 1000)
+    
+    if not success:
+        return create_error_response(400, error)
+    
+    # 2. Salvar análise no Supabase
+    if supabase_client.is_connected():
+        sources_success, sources, sources_error = supabase_client.get_data_sources()
+        if sources_success and sources:
+            latest_source = sources[0]
+            supabase_client.save_analysis(
+                data_source_id=latest_source['id'],
+                analysis_type='ai_analysis',
+                prompt=prompt,
+                result={'analysis': analysis, 'chart_config': chart_config},
+                model_used='gpt-3.5-turbo',
+                processing_time_ms=processing_time
+            )
+    
+    return create_success_response({
+        "analysis": analysis,
+        "model": "gpt-3.5-turbo",
+        "processing_time_ms": processing_time,
+        "saved_to_db": supabase_client.is_connected()
+    })
+```
+
+## Troubleshooting
+
+### Problemas Comuns
+
+#### 1. Cliente não conectado
+```python
+if not supabase_client.is_connected():
+    logger.error("Cliente Supabase não conectado")
+    # Verificar variáveis de ambiente
+    # Verificar URL e chaves
+    # Tentar reconectar
+```
+
+#### 2. Erro de permissão
+```python
+try:
+    result = supabase_client.client.table("data_sources").insert(data).execute()
+except Exception as e:
+    if "permission denied" in str(e).lower():
+        logger.error("Erro de permissão - verificar RLS")
+    else:
+        logger.error(f"Erro de banco: {e}")
+```
+
+#### 3. Timeout de conexão
+```python
+# Configurar timeout
+supabase_client.client.timeout = 30
+
+# Implementar retry
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
+def save_with_retry(data):
+    return supabase_client.client.table("table").insert(data).execute()
+```
+
+### Logs Importantes
+```python
+# Logs de conexão
+logger.info("Conectando ao Supabase...")
+logger.info("Cliente Supabase inicializado")
+
+# Logs de operações
+logger.info(f"Salvando {len(data)} registros na tabela {table_name}")
+logger.info(f"Análise salva com ID: {analysis_id}")
+
+# Logs de erro
+logger.error(f"Erro ao conectar Supabase: {error}")
+logger.error(f"Erro ao salvar dados: {error}")
+```
+
+## Checklist de Integração
+
+### Antes de Usar
+- [ ] **Projeto correto** configurado (`hwfnntgacsebqrprqzzm`)
+- [ ] **Chaves API** válidas e configuradas
+- [ ] **Tabelas criadas** e funcionando
+- [ ] **RLS configurado** adequadamente
+- [ ] **Cliente inicializado** corretamente
+
+### Durante o Uso
+- [ ] **Verificar conexão** antes de operações
+- [ ] **Validar dados** antes de inserir
+- [ ] **Tratar erros** adequadamente
+- [ ] **Logar operações** importantes
+- [ ] **Usar transações** quando necessário
+
+### Monitoramento
+- [ ] **Logs de conexão** funcionando
+- [ ] **Métricas de performance** coletadas
+- [ ] **Erros rastreados** e tratados
+- [ ] **Dados consistentes** verificados
+
+---
+
+**Última atualização**: 27/10/2025  
+**Versão**: 1.0  
+**Projeto Supabase**: `hwfnntgacsebqrprqzzm`

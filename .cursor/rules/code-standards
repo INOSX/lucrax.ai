@@ -1,0 +1,422 @@
+# dataGPT - Padrões de Código
+
+## Python Code Standards
+
+### Imports e Organização
+```python
+# 1. Imports padrão da biblioteca
+import os
+import sys
+from typing import Dict, List, Optional, Tuple, Any
+from datetime import datetime
+
+# 2. Imports de terceiros
+import pandas as pd
+import plotly.graph_objects as go
+import requests
+from supabase import create_client
+
+# 3. Imports locais
+from config import Config
+from src.validators import DataValidator
+```
+
+### Funções e Métodos
+```python
+def process_data(
+    data: pd.DataFrame,
+    config: Dict[str, Any],
+    validate: bool = True
+) -> Tuple[bool, Optional[pd.DataFrame], Optional[str]]:
+    """
+    Processa dados com configuração específica.
+    
+    Args:
+        data: DataFrame com os dados
+        config: Configuração do processamento
+        validate: Se deve validar os dados
+        
+    Returns:
+        Tuple com (sucesso, dados_processados, erro)
+    """
+    if validate and not DataValidator.validate_dataframe(data):
+        return False, None, "Dados inválidos"
+    
+    try:
+        processed_data = data.copy()
+        return True, processed_data, None
+    except Exception as e:
+        return False, None, f"Erro no processamento: {str(e)}"
+```
+
+### Classes
+```python
+class DataProcessor:
+    """Processador de dados para o dataGPT."""
+    
+    def __init__(self, config: Config):
+        self.config = config
+        self.validator = DataValidator()
+    
+    def process(self, data: pd.DataFrame) -> Tuple[bool, Optional[pd.DataFrame], Optional[str]]:
+        """Processa os dados."""
+        pass
+```
+
+## Segurança
+
+### Validação de Entrada
+```python
+def validate_google_sheets_url(url: str) -> bool:
+    """Valida URL do Google Sheets."""
+    if not url or not isinstance(url, str):
+        return False
+    
+    pattern = r'https://docs\.google\.com/spreadsheets/d/[a-zA-Z0-9-_]+/edit.*'
+    return bool(re.match(pattern, url))
+```
+
+### Sanitização
+```python
+def sanitize_user_input(text: str, max_length: int = 1000) -> str:
+    """Sanitiza entrada do usuário."""
+    if not text:
+        return ""
+    
+    sanitized = re.sub(r'[<>"\']', '', str(text))
+    return sanitized[:max_length].strip()
+```
+
+### Chaves API
+```python
+def validate_api_keys() -> bool:
+    """Valida se as chaves API estão configuradas."""
+    required_keys = [
+        'OPENAI_API_KEY',
+        'SUPABASE_URL',
+        'SUPABASE_ANON_KEY'
+    ]
+    
+    for key in required_keys:
+        if not os.getenv(key):
+            logger.error(f"Chave API faltando: {key}")
+            return False
+    
+    return True
+```
+
+## Banco de Dados
+
+### Padrões de Conexão
+```python
+class SupabaseManager:
+    """Gerenciador de conexão com Supabase."""
+    
+    def __init__(self):
+        self.client = None
+        self._connect()
+    
+    def _connect(self) -> None:
+        """Estabelece conexão com Supabase."""
+        try:
+            url = Config.SUPABASE_URL
+            key = Config.SUPABASE_ANON_KEY
+            self.client = create_client(url, key)
+        except Exception as e:
+            logger.error(f"Erro ao conectar Supabase: {e}")
+    
+    def is_connected(self) -> bool:
+        """Verifica se está conectado."""
+        return self.client is not None
+```
+
+### Operações de Banco
+```python
+def save_analysis(
+    data_source_id: str,
+    analysis: str,
+    model_used: str
+) -> Tuple[bool, Optional[str], Optional[str]]:
+    """Salva análise no banco de dados."""
+    if not supabase_client.is_connected():
+        return False, None, "Cliente não conectado"
+    
+    try:
+        data = {
+            "data_source_id": data_source_id,
+            "analysis_type": "ai_analysis",
+            "result": {"analysis": analysis},
+            "model_used": model_used,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        result = supabase_client.table("data_analyses").insert(data).execute()
+        
+        if result.data:
+            return True, result.data[0]["id"], None
+        else:
+            return False, None, "Erro ao salvar análise"
+            
+    except Exception as e:
+        logger.error(f"Erro ao salvar análise: {e}")
+        return False, None, f"Erro de banco: {str(e)}"
+```
+
+## API e Vercel
+
+### Estrutura de Resposta
+```python
+def create_response(
+    status_code: int,
+    data: Optional[Dict] = None,
+    error: Optional[str] = None,
+    message: Optional[str] = None
+) -> Dict[str, Any]:
+    """Cria resposta padronizada da API."""
+    response = {
+        "status": "success" if status_code < 400 else "error",
+        "status_code": status_code,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    if data:
+        response["data"] = data
+    
+    if error:
+        response["error"] = error
+    
+    if message:
+        response["message"] = message
+    
+    return response
+```
+
+### Tratamento de Erros
+```python
+def handle_api_error(error: Exception, context: str) -> Dict[str, Any]:
+    """Trata erros da API de forma padronizada."""
+    logger.error(f"Erro em {context}: {error}")
+    
+    if isinstance(error, requests.Timeout):
+        return create_response(408, error="Timeout na requisição")
+    elif isinstance(error, requests.ConnectionError):
+        return create_response(503, error="Serviço indisponível")
+    elif isinstance(error, ValueError):
+        return create_response(400, error=str(error))
+    else:
+        return create_response(500, error="Erro interno do servidor")
+```
+
+## Gráficos e Visualização
+
+### Configuração de Gráficos
+```python
+def create_chart_config(
+    chart_type: str,
+    data: pd.DataFrame,
+    x_col: str,
+    y_col: str,
+    title: str = None
+) -> Dict[str, Any]:
+    """Cria configuração padronizada de gráfico."""
+    config = {
+        "chart_type": chart_type,
+        "x_axis_col": x_col,
+        "y_axis_col": y_col,
+        "title": title or f"{y_col} vs {x_col}",
+        "x_axis_label": x_col.replace("_", " ").title(),
+        "y_axis_label": y_col.replace("_", " ").title(),
+        "color": "#1f77b4",
+        "show_totals": False
+    }
+    
+    if chart_type == "pie" and len(data[x_col].unique()) > 10:
+        logger.warning("Muitos valores para gráfico de pizza")
+    
+    return config
+```
+
+### Geração de Gráficos
+```python
+def generate_plotly_chart(
+    data: pd.DataFrame,
+    config: Dict[str, Any]
+) -> Tuple[bool, Optional[str], Optional[str]]:
+    """Gera gráfico Plotly."""
+    try:
+        if config["chart_type"] == "bar":
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=data[config["x_axis_col"]],
+                    y=data[config["y_axis_col"]],
+                    name=config["y_axis_label"]
+                )
+            ])
+        
+        fig.update_layout(
+            title=config["title"],
+            xaxis_title=config["x_axis_label"],
+            yaxis_title=config["y_axis_label"]
+        )
+        
+        return True, fig.to_html(), None
+        
+    except Exception as e:
+        return False, None, f"Erro ao gerar gráfico: {str(e)}"
+```
+
+## Integração com IA
+
+### Cliente OpenAI
+```python
+class OpenAIClient:
+    """Cliente para OpenAI API."""
+    
+    def __init__(self):
+        self.api_key = Config.OPENAI_API_KEY
+        self.model = Config.OPENAI_MODEL
+        self.max_tokens = Config.OPENAI_MAX_TOKENS
+        self.temperature = Config.OPENAI_TEMPERATURE
+    
+    def analyze_data(
+        self,
+        prompt: str,
+        data: pd.DataFrame,
+        chart_config: Dict[str, Any]
+    ) -> Tuple[bool, Optional[str], Optional[str]]:
+        """Analisa dados com OpenAI."""
+        if not self.is_available():
+            return False, None, "OpenAI não disponível"
+        
+        try:
+            context = self._prepare_context(data, chart_config)
+            full_prompt = f"{context}\n\n{prompt}"
+            
+            response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=[{"role": "user", "content": full_prompt}],
+                max_tokens=self.max_tokens,
+                temperature=self.temperature
+            )
+            
+            analysis = response.choices[0].message.content
+            return True, analysis, None
+            
+        except Exception as e:
+            return False, None, f"Erro OpenAI: {str(e)}"
+```
+
+## Testes
+
+### Estrutura de Testes
+```python
+import pytest
+from unittest.mock import Mock, patch
+import pandas as pd
+
+class TestDataLoader:
+    """Testes para DataLoader."""
+    
+    def test_load_data_success(self):
+        """Testa carregamento bem-sucedido."""
+        url = "https://docs.google.com/spreadsheets/d/test/edit"
+        mock_data = pd.DataFrame({"col1": [1, 2, 3], "col2": [4, 5, 6]})
+        
+        with patch('src.data_loader.requests.get') as mock_get:
+            mock_get.return_value.text = mock_data.to_csv()
+            
+            success, data, error = load_data_from_url(url)
+            
+            assert success is True
+            assert data is not None
+            assert error is None
+            assert len(data) == 3
+    
+    def test_load_data_invalid_url(self):
+        """Testa URL inválida."""
+        invalid_url = "not-a-valid-url"
+        
+        success, data, error = load_data_from_url(invalid_url)
+        
+        assert success is False
+        assert data is None
+        assert "URL inválida" in error
+```
+
+## Logging
+
+### Configuração de Logs
+```python
+import logging
+from datetime import datetime
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('dataGPT.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+def process_data(data):
+    logger.info(f"Iniciando processamento de {len(data)} registros")
+    
+    try:
+        result = data.process()
+        logger.info("Processamento concluído com sucesso")
+        return result
+    except Exception as e:
+        logger.error(f"Erro no processamento: {e}")
+        raise
+```
+
+## Performance
+
+### Otimizações
+```python
+from functools import lru_cache
+import time
+
+@lru_cache(maxsize=128)
+def get_cached_analysis(prompt_hash: str) -> Optional[str]:
+    """Cache para análises repetidas."""
+    return None
+
+def measure_performance(func):
+    """Decorator para medir performance."""
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        
+        logger.info(f"{func.__name__} executado em {end_time - start_time:.2f}s")
+        return result
+    return wrapper
+```
+
+## Checklist de Código
+
+### Antes de Commitar
+- [ ] **Imports organizados** (padrão, terceiros, locais)
+- [ ] **Docstrings completas** em todas as funções
+- [ ] **Tratamento de erros** implementado
+- [ ] **Logs apropriados** adicionados
+- [ ] **Validação de entrada** incluída
+- [ ] **Testes unitários** escritos
+- [ ] **Type hints** utilizados
+- [ ] **Nomenclatura consistente** seguida
+
+### Checklist de Segurança
+- [ ] **Entrada sanitizada** antes do processamento
+- [ ] **Chaves API** não expostas no código
+- [ ] **URLs validadas** antes do uso
+- [ ] **SQL injection** prevenido
+- [ ] **XSS** prevenido na saída
+
+---
+
+**Última atualização**: 27/10/2025  
+**Versão**: 1.0

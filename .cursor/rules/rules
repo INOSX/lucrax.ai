@@ -1,0 +1,297 @@
+# dataGPT v2.6 - Regras do Projeto
+
+## Visão Geral
+Projeto open source para visualização e análise de dados do Google Sheets com integração de IA (OpenAI + NNeural.io) e persistência no Supabase.
+
+## Arquitetura
+- **Frontend**: Streamlit (local) + HTML/JS (Vercel)
+- **Backend**: Python Serverless Functions (Vercel)
+- **Banco de Dados**: Supabase (hwfnntgacsebqrprqzzm.supabase.co)
+- **IA**: OpenAI (prioritário) + NNeural.io (fallback)
+- **Deploy**: Vercel + Git
+
+## Estrutura de Diretórios
+```
+dataGPT/
+├── src/                    # Código fonte principal
+│   ├── data_loader.py      # Carregamento de dados
+│   ├── chart_generator.py  # Geração de gráficos
+│   ├── api_client.py       # Cliente NNeural.io
+│   ├── openai_client.py    # Cliente OpenAI
+│   ├── supabase_client.py  # Cliente Supabase
+│   └── validators.py       # Validações e segurança
+├── api/                    # API Vercel
+│   └── index.py           # Serverless function
+├── tests/                  # Testes unitários
+├── config.py              # Configurações centralizadas
+└── requirements.txt       # Dependências
+```
+
+## Padrões de Código Python
+
+### Nomenclatura
+- Classes: PascalCase (`DataLoader`, `ChartGenerator`)
+- Funções/Variáveis: snake_case (`load_data`, `chart_config`)
+- Constantes: UPPER_SNAKE_CASE (`API_BASE_URL`, `MAX_RETRIES`)
+- Arquivos: snake_case (`data_loader.py`, `chart_generator.py`)
+
+### Documentação
+```python
+def load_data_from_url(url: str) -> Tuple[bool, Optional[pd.DataFrame], Optional[str]]:
+    """
+    Carrega dados de uma URL do Google Sheets.
+    
+    Args:
+        url: URL do Google Sheets compartilhado
+        
+    Returns:
+        Tuple contendo:
+        - bool: True se sucesso, False se erro
+        - Optional[pd.DataFrame]: Dados carregados ou None
+        - Optional[str]: Mensagem de erro ou None
+    """
+```
+
+### Tratamento de Erros
+```python
+try:
+    result = perform_operation()
+    return True, result, None
+except SpecificException as e:
+    logger.error(f"Erro específico: {e}")
+    return False, None, f"Erro específico: {str(e)}"
+except Exception as e:
+    logger.error(f"Erro inesperado: {e}")
+    return False, None, f"Erro inesperado: {str(e)}"
+```
+
+## Segurança e Validação
+
+### Validação de Entrada
+- URLs: Sempre validar formato e domínio
+- Dados: Sanitizar entrada do usuário
+- APIs: Verificar chaves e configurações
+- DataFrames: Validar estrutura e tipos
+
+### Sanitização
+```python
+def sanitize_input(text: str, max_length: int = 1000) -> str:
+    """Sanitiza entrada do usuário"""
+    if not text:
+        return ""
+    sanitized = re.sub(r'[<>"\']', '', text)
+    return sanitized[:max_length]
+```
+
+### Chaves API
+- Nunca commitar chaves reais
+- Sempre usar variáveis de ambiente
+- Validar presença antes de usar
+- Fallback para configurações padrão
+
+## Banco de Dados Supabase
+
+### Projeto Ativo
+- Projeto ID: `hwfnntgacsebqrprqzzm`
+- URL: `https://hwfnntgacsebqrprqzzm.supabase.co`
+- Status: ✅ Ativo e funcionando
+
+### Tabelas Principais
+1. `data_sources` - Fontes de dados importadas
+2. `data_analyses` - Histórico de análises
+3. `chart_configurations` - Configurações de gráficos
+4. `user_sessions` - Sessões de usuários
+5. `api_usage_logs` - Logs de uso
+6. `imported_data` - Cache de dados
+
+### Padrões de Uso
+```python
+# Sempre verificar conexão
+if not supabase_client.is_connected():
+    return False, None, "Cliente Supabase não disponível"
+
+# Usar transações quando possível
+# Tratar erros de banco de dados
+# Logar operações importantes
+```
+
+## Deploy e Vercel
+
+### Estrutura de Deploy
+- Framework: Python Serverless Functions
+- Entry Point: `api/index.py`
+- Dependências: `requirements.txt`
+- Configuração: `vercel.json`
+
+### Variáveis de Ambiente Obrigatórias
+```env
+OPENAI_API_KEY=sk-...
+SUPABASE_URL=https://hwfnntgacsebqrprqzzm.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_KEY=eyJ...
+```
+
+### Padrões de API
+```python
+def handler(request):
+    """Handler principal para requisições HTTP"""
+    try:
+        if request.method not in ['GET', 'POST']:
+            return error_response(405, "Método não permitido")
+        
+        if request.path == '/api/load-data':
+            return handle_load_data(request)
+    except Exception as e:
+        return error_response(500, f"Erro interno: {str(e)}")
+```
+
+## Gráficos e Visualização
+
+### Tipos Suportados
+- Line, Bar, Scatter, Area, Pie, Histogram, Box
+
+### Padrões de Configuração
+```python
+chart_config = {
+    "chart_type": "bar",
+    "title": "Título do Gráfico",
+    "x_axis_label": "Eixo X",
+    "y_axis_label": "Eixo Y",
+    "x_axis_col": "coluna_x",
+    "y_axis_col": "coluna_y",
+    "color": "#1f77b4",
+    "show_totals": True
+}
+```
+
+## Integração com IA
+
+### OpenAI (Prioritário)
+- Modelo: `gpt-3.5-turbo`
+- Max Tokens: 1000
+- Temperature: 0.7
+- Timeout: 30 segundos
+
+### NNeural.io (Fallback)
+- Autenticação: Email + Senha
+- Cache: Tokens em memória
+- Retry: 3 tentativas
+
+### Padrões de Prompt
+```python
+def create_analysis_prompt(data_info: dict, chart_config: dict) -> str:
+    """Cria prompt estruturado para análise"""
+    prompt = f"""
+    Analise os dados de {chart_config['x_axis_col']} vs {chart_config['y_axis_col']}.
+    
+    Título: {chart_config['title']}
+    Tipo de gráfico: {chart_config['chart_type']}
+    Número de registros: {data_info['row_count']}
+    
+    Forneça insights sobre:
+    1. Tendências principais
+    2. Padrões identificados
+    3. Recomendações
+    """
+    return prompt.strip()
+```
+
+## Testes
+
+### Estrutura de Testes
+```
+tests/
+├── test_app.py              # Testes da aplicação principal
+├── test_data_loader.py      # Testes de carregamento
+├── test_chart_generator.py  # Testes de gráficos
+└── test_api_client.py       # Testes de APIs
+```
+
+### Padrões de Teste
+```python
+def test_load_data_success():
+    """Testa carregamento bem-sucedido de dados"""
+    url = "https://docs.google.com/spreadsheets/d/test/edit"
+    success, data, error = load_data_from_url(url)
+    
+    assert success is True
+    assert data is not None
+    assert error is None
+    assert isinstance(data, pd.DataFrame)
+```
+
+## Documentação
+
+### Arquivos de Documentação
+- README.md: Documentação principal
+- SUPABASE_INTEGRATION.md: Integração Supabase
+- PROJECT_STATUS.md: Status do projeto
+- VERCEL_DEPLOYMENT.md: Deploy Vercel
+
+### Padrões de Documentação
+- Seções claras com emojis
+- Exemplos de código sempre incluídos
+- Status atualizado regularmente
+- Troubleshooting para problemas comuns
+
+## Git e Versionamento
+
+### Commits
+- Formato: `tipo: descrição breve`
+- Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `test`
+- Exemplo: `feat: adicionar suporte a histogramas`
+
+### Branches
+- main: Produção
+- develop: Desenvolvimento
+- feature/: Novas funcionalidades
+- hotfix/: Correções urgentes
+
+## Performance
+
+### Otimizações
+- Cache: Dados e tokens em memória
+- Lazy Loading: Carregar dados sob demanda
+- Timeouts: Configuráveis para todas as operações
+- Retry Logic: Para operações de rede
+
+### Monitoramento
+- Logs: Todas as operações importantes
+- Métricas: Tempo de resposta, taxa de sucesso
+- Alertas: Falhas de API, erros de banco
+
+## Troubleshooting
+
+### Problemas Comuns
+1. Chaves API inválidas: Verificar variáveis de ambiente
+2. URLs inválidas: Validar formato do Google Sheets
+3. Timeout: Ajustar configurações de timeout
+4. Erro de banco: Verificar conexão Supabase
+
+### Logs Importantes
+- Erro de carregamento: URL e tipo de erro
+- Falha de API: Chave e resposta
+- Erro de banco: Query e exceção
+- Timeout: Operação e tempo limite
+
+## Checklist de Desenvolvimento
+
+### Antes de Commitar
+- [ ] Código testado localmente
+- [ ] Documentação atualizada
+- [ ] Tratamento de erros implementado
+- [ ] Logs adicionados
+- [ ] Validações incluídas
+
+### Antes de Deploy
+- [ ] Testes passando
+- [ ] Variáveis de ambiente configuradas
+- [ ] Documentação atualizada
+- [ ] Performance verificada
+- [ ] Segurança validada
+
+---
+
+**Última atualização**: 27/10/2025  
+**Versão**: 1.0  
+**Mantenedor**: Equipe dataGPT
