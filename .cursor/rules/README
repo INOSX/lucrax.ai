@@ -32,10 +32,11 @@ Este diretório contém todas as regras e padrões para o desenvolvimento do pro
 - **SEMPRE** categorizar mudanças corretamente
 
 ### 2. **Deploy** (deployment-rules)
+- **SEMPRE** trabalhar no branch `develop`
 - **SEMPRE** deploy primeiro para desenvolvimento
 - **NUNCA** deploy para produção sem solicitação explícita
-- Usar branch `develop` para desenvolvimento
-- Usar branch `main` apenas quando solicitado
+- **NUNCA** trabalhar diretamente no branch `main`
+- Usar branch `main` apenas quando solicitado explicitamente
 
 ### 3. **Código** (code-standards)
 - Nomenclatura: PascalCase para classes, snake_case para funções

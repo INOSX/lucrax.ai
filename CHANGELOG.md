@@ -13,8 +13,10 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 - Regras específicas para CHANGELOG
 
 ### Alterado
+- **Melhorada regra de deploy para sempre trabalhar no branch `develop`**
 - Melhorada organização das regras do projeto
 - Atualizada documentação de regras
+- Deploy para produção apenas quando solicitado explicitamente
 
 ### Corrigido
 - Removidos arquivos de regras com formato incorreto

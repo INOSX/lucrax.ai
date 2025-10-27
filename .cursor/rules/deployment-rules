@@ -3,28 +3,43 @@
 ## Política de Deploy
 
 ### Regra Principal
-**TODOS os deploys devem ser realizados PRIMEIRO no ambiente de desenvolvimento. Deploy em produção APENAS quando solicitado explicitamente pelo usuário.**
+**SEMPRE trabalhar no branch de desenvolvimento. Deploy em produção APENAS quando o usuário solicitar explicitamente.**
+
+### Fluxo de Trabalho Obrigatório
+1. **Desenvolvimento**: SEMPRE no branch `develop`
+2. **Deploy Dev**: Automático ao fazer push para `develop`
+3. **Deploy Prod**: APENAS quando usuário solicitar explicitamente
+4. **Merge**: De `develop` para `main` apenas quando solicitado
 
 ## Fluxo de Deploy Obrigatório
 
-### 1. Deploy de Desenvolvimento (SEMPRE PRIMEIRO)
+### 1. Desenvolvimento (SEMPRE)
 ```bash
-# Deploy automático para desenvolvimento
-git push origin develop
+# SEMPRE trabalhar no branch develop
+git checkout develop
+git pull origin develop
 
-# Ou deploy manual para desenvolvimento
-vercel --target development
+# Desenvolver funcionalidades
+# ... código ...
+
+# Commit e push (deploy automático para desenvolvimento)
+git add .
+git commit -m "feat: nova funcionalidade"
+git push origin develop
 ```
 
 ### 2. Deploy de Produção (APENAS QUANDO SOLICITADO)
 ```bash
-# Deploy para produção - APENAS quando o usuário solicitar
-vercel --prod
+# APENAS quando usuário solicitar explicitamente:
+# "faça deploy para produção" ou "deploy em prod"
 
-# Ou merge para main quando solicitado
+# Merge de develop para main
 git checkout main
 git merge develop
 git push origin main
+
+# Ou deploy manual para produção
+vercel --prod
 ```
 
 ## Ambientes Configurados
@@ -44,22 +59,26 @@ git push origin main
 ## Regras de Deploy
 
 ### ✅ Permitido SEMPRE
+- **Trabalhar no branch `develop`**
 - Deploy para ambiente de desenvolvimento
 - Push para branch `develop`
 - Testes em ambiente de desenvolvimento
 - Correções em ambiente de desenvolvimento
+- Desenvolvimento de novas funcionalidades
 
 ### ❌ Proibido SEM Solicitação Explícita
 - Deploy para produção
 - Push para branch `main`
 - Merge de `develop` para `main`
 - Alteração de variáveis de ambiente de produção
+- Trabalhar diretamente no branch `main`
 
 ### 🔒 Deploy de Produção - Apenas Quando
 - Usuário solicitar explicitamente: "faça deploy para produção"
 - Usuário solicitar explicitamente: "deploy em prod"
 - Usuário solicitar explicitamente: "merge para main"
 - Usuário confirmar: "sim, pode fazer deploy em produção"
+- Usuário usar palavras-chave: "produção", "prod", "main"
 
 ## Scripts de Deploy
 
@@ -174,35 +193,37 @@ LOG_LEVEL=info
 
 ## Workflow de Desenvolvimento
 
-### 1. Desenvolvimento de Nova Funcionalidade
+### 1. Desenvolvimento de Nova Funcionalidade (SEMPRE)
 ```bash
-# 1. Criar branch de feature
+# 1. SEMPRE trabalhar no branch develop
 git checkout develop
 git pull origin develop
+
+# 2. Criar branch de feature a partir de develop
 git checkout -b feature/nova-funcionalidade
 
-# 2. Desenvolver e testar
+# 3. Desenvolver e testar
 # ... código ...
 
-# 3. Commit e push para feature
+# 4. Commit e push para feature
 git add .
 git commit -m "feat: nova funcionalidade"
 git push origin feature/nova-funcionalidade
 
-# 4. Merge para develop (deploy automático)
+# 5. Merge para develop (deploy automático)
 git checkout develop
 git merge feature/nova-funcionalidade
 git push origin develop  # Deploy automático para desenvolvimento
 ```
 
-### 2. Deploy para Produção (Apenas Quando Solicitado)
+### 2. Deploy para Produção (APENAS QUANDO SOLICITADO)
 ```bash
-# 1. Usuário solicita: "faça deploy para produção"
+# 1. Usuário solicita explicitamente: "faça deploy para produção"
 # 2. Verificar se develop está estável
 git checkout develop
 git pull origin develop
 
-# 3. Merge para main
+# 3. Merge para main (APENAS quando solicitado)
 git checkout main
 git pull origin main
 git merge develop
@@ -329,21 +350,25 @@ vercel rollback [deployment-url] --prod
 ## Resumo das Regras
 
 ### ✅ SEMPRE Permitido
-1. Deploy para desenvolvimento
-2. Push para branch `develop`
-3. Testes em ambiente de desenvolvimento
-4. Correções em ambiente de desenvolvimento
+1. **Trabalhar no branch `develop`**
+2. Deploy para desenvolvimento
+3. Push para branch `develop`
+4. Testes em ambiente de desenvolvimento
+5. Correções em ambiente de desenvolvimento
+6. Desenvolvimento de novas funcionalidades
 
 ### ❌ NUNCA Sem Solicitação
 1. Deploy para produção
 2. Push para branch `main`
 3. Merge de `develop` para `main`
 4. Alteração de configurações de produção
+5. **Trabalhar diretamente no branch `main`**
 
 ### 🔒 Deploy de Produção - Apenas Quando
 1. Usuário solicitar explicitamente
 2. Usuário confirmar a solicitação
 3. Usuário usar palavras-chave: "produção", "prod", "main"
+4. Usuário dizer: "faça deploy para produção"
 
 ---
 

@@ -242,10 +242,10 @@ def test_load_data_success():
 - Exemplo: `feat: adicionar suporte a histogramas`
 
 ### Branches
-- main: Produção
-- develop: Desenvolvimento
-- feature/: Novas funcionalidades
-- hotfix/: Correções urgentes
+- **develop**: Desenvolvimento (SEMPRE trabalhar aqui)
+- main: Produção (APENAS quando solicitado)
+- feature/: Novas funcionalidades (a partir de develop)
+- hotfix/: Correções urgentes (a partir de develop)
 
 ## Performance
 
