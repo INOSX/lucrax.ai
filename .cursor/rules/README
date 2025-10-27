@@ -12,10 +12,17 @@ Este diretório contém todas as regras e padrões para o desenvolvimento do pro
 ├── code-standards          # Padrões de código Python
 ├── supabase-rules          # Regras específicas do Supabase
 ├── deployment-rules        # Regras de deploy e ambientes
+├── rule-creation-guidelines # Como criar novas regras
 └── README                  # Este arquivo
 ```
 
 ## 🎯 Regras Principais
+
+### 0. **Criação de Regras** (rule-creation-guidelines)
+- **Formato**: MDC (Markdown Documentation) do Cursor AI
+- **Localização**: `.cursor/rules/` (sem extensão .md)
+- **Nomenclatura**: snake_case descritivo
+- **Estrutura**: Template padrão com exemplos e checklists
 
 ### 1. **Deploy** (deployment-rules)
 - **SEMPRE** deploy primeiro para desenvolvimento
@@ -191,16 +198,40 @@ tests/
 - **URL**: `https://datagpt.vercel.app`
 - **Deploy**: Apenas quando solicitado explicitamente
 
+## 📝 Como Criar Novas Regras
+
+### Processo Padrão
+1. **Identificar necessidade** de nova regra
+2. **Escolher nome** em snake_case (ex: `api-rules`, `testing-rules`)
+3. **Usar template** do arquivo `rule-creation-guidelines`
+4. **Criar arquivo** sem extensão `.md` em `.cursor/rules/`
+5. **Incluir exemplos** de código e checklists
+6. **Atualizar README** com nova regra
+
+### Formato Obrigatório
+- **Localização**: `.cursor/rules/[nome-da-regra]`
+- **Formato**: MDC (Markdown Documentation)
+- **Estrutura**: Template padrão com seções definidas
+- **Conteúdo**: Exemplos práticos e checklists
+
+### Validação
+- [ ] Arquivo sem extensão `.md`
+- [ ] Nome em snake_case
+- [ ] Estrutura MDC correta
+- [ ] Exemplos incluídos
+- [ ] README atualizado
+
 ## 📞 Suporte
 
 ### Em Caso de Dúvidas
 1. Consultar este arquivo README
 2. Verificar regras específicas nos arquivos correspondentes
-3. Verificar logs de erro
-4. Consultar documentação do projeto
+3. Consultar `rule-creation-guidelines` para criar novas regras
+4. Verificar logs de erro
+5. Consultar documentação do projeto
 
 ---
 
 **Última atualização**: 27/10/2025  
-**Versão**: 1.0  
+**Versão**: 1.1  
 **Mantenedor**: Equipe dataGPT

@@ -1,0 +1,235 @@
+# dataGPT - Guia de Criação de Regras
+
+## 📋 Como Criar Novas Regras
+
+### Formato Obrigatório
+- **Formato**: MDC (Markdown Documentation) do Cursor AI
+- **Localização**: `.cursor/rules/`
+- **Extensão**: Sem extensão (arquivo sem `.md`)
+- **Nome**: snake_case descritivo
+
+### Estrutura Padrão
+```
+.cursor/rules/
+├── rules                    # Regras gerais do projeto
+├── code-standards          # Padrões de código
+├── deployment-rules        # Regras de deploy
+├── supabase-rules          # Regras do Supabase
+├── rule-creation-guidelines # Este arquivo
+└── README                  # Índice das regras
+```
+
+## 🎯 Processo de Criação
+
+### 1. Identificar Necessidade
+- Nova funcionalidade requer regras específicas?
+- Padrão atual não está sendo seguido?
+- Nova tecnologia/ferramenta sendo integrada?
+
+### 2. Escolher Nome do Arquivo
+```bash
+# Padrões de nomenclatura
+feature-name-rules          # Para funcionalidades específicas
+technology-rules            # Para tecnologias (ex: vercel-rules)
+process-rules               # Para processos (ex: testing-rules)
+security-rules              # Para segurança
+performance-rules           # Para performance
+```
+
+### 3. Estrutura do Arquivo
+```markdown
+# dataGPT - [Nome da Regra]
+
+## 🎯 Objetivo
+Descrição clara do que a regra cobre.
+
+## [Seção Principal]
+Conteúdo específico da regra.
+
+## Exemplos de Código
+```python
+# Exemplos práticos sempre incluídos
+```
+
+## Checklist
+- [ ] Item 1
+- [ ] Item 2
+
+---
+
+**Última atualização**: [Data]
+**Versão**: 1.0
+```
+
+### 4. Validação
+- [ ] Arquivo sem extensão `.md`
+- [ ] Nome em snake_case
+- [ ] Estrutura MDC correta
+- [ ] Exemplos de código incluídos
+- [ ] Checklist de validação
+- [ ] Data de atualização
+
+### 5. Atualizar README
+Sempre atualizar `.cursor/rules/README` com:
+- Nova regra na lista
+- Breve descrição
+- Quando usar
+
+## 📝 Template de Nova Regra
+
+```markdown
+# dataGPT - [Nome da Regra]
+
+## 🎯 Objetivo
+[Descrição clara do propósito]
+
+## [Seção 1]
+[Conteúdo específico]
+
+## [Seção 2]
+[Conteúdo específico]
+
+## Exemplos
+```python
+# Exemplo de código
+def exemplo():
+    pass
+```
+
+## Padrões
+- Item 1
+- Item 2
+- Item 3
+
+## Checklist
+- [ ] Verificação 1
+- [ ] Verificação 2
+- [ ] Verificação 3
+
+## Troubleshooting
+### Problema Comum 1
+**Solução**: Descrição da solução
+
+### Problema Comum 2
+**Solução**: Descrição da solução
+
+---
+
+**Última atualização**: [DD/MM/AAAA]
+**Versão**: 1.0
+**Categoria**: [Categoria da regra]
+```
+
+## 🔍 Validação de Regras Existentes
+
+### Checklist de Validação
+- [ ] **Formato**: Arquivo sem extensão `.md`
+- [ ] **Localização**: Dentro de `.cursor/rules/`
+- [ ] **Nomenclatura**: snake_case
+- [ ] **Estrutura**: MDC válido
+- [ ] **Conteúdo**: Exemplos e checklists incluídos
+- [ ] **Atualização**: Data e versão atualizadas
+
+### Arquivos Incorretos a Corrigir
+- Arquivos com extensão `.md` → Remover extensão
+- Arquivos fora de `.cursor/rules/` → Mover para local correto
+- Nomes em PascalCase → Converter para snake_case
+- Estrutura não-MDC → Reformatar
+
+## 🗑️ Limpeza de Arquivos Antigos
+
+### Identificar Arquivos Antigos
+```bash
+# Buscar arquivos .md em .cursor/rules/
+find .cursor/rules/ -name "*.md"
+
+# Buscar arquivos fora do diretório correto
+find . -name "*rules*" -not -path "./.cursor/rules/*"
+```
+
+### Processo de Limpeza
+1. **Identificar** arquivos incorretos
+2. **Converter** para formato MDC correto
+3. **Mover** para `.cursor/rules/`
+4. **Renomear** para snake_case
+5. **Deletar** arquivos antigos
+6. **Atualizar** README
+
+## 📚 Categorias de Regras
+
+### Regras Técnicas
+- `code-standards` - Padrões de código
+- `api-rules` - Regras de API
+- `database-rules` - Regras de banco de dados
+- `security-rules` - Regras de segurança
+
+### Regras de Processo
+- `deployment-rules` - Deploy e ambientes
+- `testing-rules` - Testes e QA
+- `documentation-rules` - Documentação
+- `git-rules` - Controle de versão
+
+### Regras de Ferramentas
+- `supabase-rules` - Supabase
+- `vercel-rules` - Vercel
+- `openai-rules` - OpenAI
+- `streamlit-rules` - Streamlit
+
+## 🔄 Manutenção de Regras
+
+### Atualizações Regulares
+- **Semanal**: Revisar regras ativas
+- **Mensal**: Atualizar exemplos de código
+- **Trimestral**: Revisar estrutura geral
+
+### Versionamento
+- **v1.0**: Criação inicial
+- **v1.1**: Pequenas correções
+- **v2.0**: Mudanças significativas
+
+### Deprecação
+- Marcar regras obsoletas
+- Mover para `.cursor/rules/deprecated/`
+- Atualizar README
+
+## 🚨 Regras Críticas
+
+### Nunca Fazer
+- ❌ Criar arquivos `.md` em `.cursor/rules/`
+- ❌ Usar PascalCase nos nomes
+- ❌ Colocar regras fora de `.cursor/rules/`
+- ❌ Criar regras sem exemplos
+- ❌ Esquecer de atualizar README
+
+### Sempre Fazer
+- ✅ Usar formato MDC
+- ✅ Incluir exemplos práticos
+- ✅ Adicionar checklists
+- ✅ Atualizar data e versão
+- ✅ Documentar no README
+
+## 📋 Checklist de Nova Regra
+
+### Antes de Criar
+- [ ] Verificar se regra já existe
+- [ ] Definir escopo e objetivo
+- [ ] Escolher nome apropriado
+- [ ] Planejar estrutura
+
+### Durante a Criação
+- [ ] Usar template padrão
+- [ ] Incluir exemplos de código
+- [ ] Adicionar checklist de validação
+- [ ] Incluir troubleshooting
+
+### Após Criar
+- [ ] Validar formato MDC
+- [ ] Testar exemplos de código
+- [ ] Atualizar README
+- [ ] Fazer commit com mensagem descritiva
+
+---
+
+**Última atualização**: 27/10/2025  
+**Versão**: 1.0  
+**Categoria**: Meta-regras
