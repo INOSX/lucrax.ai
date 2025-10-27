@@ -35,6 +35,17 @@ Temos o prazer de anunciar o lançamento da versão 2.6 melhorada do dataGPT, no
 
 ### Novos Recursos
 
+#### 🗄️ Persistência de Dados com Supabase
+
+O dataGPT v2.6 agora inclui persistência completa de dados usando Supabase:
+
+- ✅ **Histórico de análises** - Todas as análises ficam salvas
+- ✅ **Configurações reutilizáveis** - Salve e reutilize configurações de gráficos
+- ✅ **Cache inteligente** - Dados importados são armazenados
+- ✅ **Monitoramento** - Logs detalhados de uso e performance
+
+**Projeto Supabase**: `hwfnntgacsebqrprqzzm.supabase.co` ✅ **Ativo e funcionando**
+
 #### Opção de Mostrar Totais nos Gráficos
 
 Agora é possível mostrar os totais acima das colunas e pontos em gráficos de barra, linha, dispersão e área. Esta funcionalidade permite uma visualização mais clara e imediata dos valores representados.

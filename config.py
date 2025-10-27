@@ -17,7 +17,7 @@ class Config:
     OPENAI_MAX_TOKENS: int = int(os.getenv("OPENAI_MAX_TOKENS", "1000"))
     OPENAI_TEMPERATURE: float = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
     
-    # Configurações do Supabase
+    # Configurações do Supabase - Projeto dataGPT
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "https://hwfnntgacsebqrprqzzm.supabase.co")
     SUPABASE_ANON_KEY: str = os.getenv("SUPABASE_ANON_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3Zm5udGdhY3NlYnFycHJxenptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NzI2MzgsImV4cCI6MjA3NzE0ODYzOH0.ywILG-tyRylzP6tZjzxD-y60OsInQ2GmH4qhbNG5FIg")
     SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3Zm5udGdhY3NlYnFycHJxenptIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTU3MjYzOCwiZXhwIjoyMDc3MTQ4NjM4fQ.3mo2wt6ew6x62W_hU9PMCmCEeHrrRQLaRGBguiEWK0M")

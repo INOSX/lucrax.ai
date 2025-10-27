@@ -107,11 +107,18 @@ Armazena dados importados para cache.
 
 ## 🔧 Configuração
 
+### Projeto Supabase Ativo
+
+**Projeto**: `hwfnntgacsebqrprqzzm`  
+**URL**: `https://hwfnntgacsebqrprqzzm.supabase.co`  
+**Status**: ✅ **Tabelas criadas e funcionando**
+
 ### Variáveis de Ambiente
 
 Configure as seguintes variáveis no Vercel:
 
 ```env
+# Projeto Supabase dataGPT
 SUPABASE_URL=https://hwfnntgacsebqrprqzzm.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3Zm5udGdhY3NlYnFycHJxenptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1NzI2MzgsImV4cCI6MjA3NzE0ODYzOH0.ywILG-tyRylzP6tZjzxD-y60OsInQ2GmH4qhbNG5FIg
 SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3Zm5udGdhY3NlYnFycHJxenptIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTU3MjYzOCwiZXhwIjoyMDc3MTQ4NjM4fQ.3mo2wt6ew6x62W_hU9PMCmCEeHrrRQLaRGBguiEWK0M
