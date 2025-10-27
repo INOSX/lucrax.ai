@@ -15,6 +15,7 @@ from src.data_loader import data_loader
 from src.chart_generator import chart_generator
 from src.openai_client import openai_client
 from src.validators import DataValidator, SecurityValidator
+from src.supabase_client import supabase_client
 from config import Config
 
 def handler(request):
@@ -108,6 +109,26 @@ def handle_load_data(body: Dict[str, Any], headers: Dict[str, str]):
         # Converter para JSON serializable
         data_json = data.to_dict(orient='records')
         
+        # Salvar no Supabase
+        if supabase_client.is_connected():
+            # Salvar fonte de dados
+            source_success, source_id, source_error = supabase_client.save_data_source(
+                name=f"Google Sheets - {url.split('/')[-1]}",
+                url=url,
+                source_type="google_sheets",
+                description="Dados carregados do Google Sheets"
+            )
+            
+            if source_success:
+                # Salvar dados importados
+                supabase_client.save_imported_data(
+                    data_source_id=source_id,
+                    data=data_json,
+                    columns=data.columns.tolist(),
+                    row_count=len(data_json),
+                    file_size_bytes=len(json.dumps(data_json).encode('utf-8'))
+                )
+        
         return {
             'statusCode': 200,
             'headers': headers,
@@ -115,7 +136,8 @@ def handle_load_data(body: Dict[str, Any], headers: Dict[str, str]):
                 'success': True,
                 'data': data_json,
                 'columns': data.columns.tolist(),
-                'shape': data.shape
+                'shape': data.shape,
+                'saved_to_db': supabase_client.is_connected()
             })
         }
         
@@ -227,7 +249,10 @@ def handle_analyze_data(body: Dict[str, Any], headers: Dict[str, str]):
             }
         
         # Fazer análise
+        import time
+        start_time = time.time()
         success, analysis, error = openai_client.analyze_data(prompt, data, chart_config)
+        processing_time = int((time.time() - start_time) * 1000)
         
         if not success:
             return {
@@ -236,13 +261,30 @@ def handle_analyze_data(body: Dict[str, Any], headers: Dict[str, str]):
                 'body': json.dumps({'error': error})
             }
         
+        # Salvar análise no Supabase
+        if supabase_client.is_connected():
+            # Buscar fonte de dados mais recente
+            sources_success, sources, sources_error = supabase_client.get_data_sources()
+            if sources_success and sources:
+                latest_source = sources[0]  # Mais recente
+                supabase_client.save_analysis(
+                    data_source_id=latest_source['id'],
+                    analysis_type='ai_analysis',
+                    prompt=prompt,
+                    result={'analysis': analysis, 'chart_config': chart_config},
+                    model_used='gpt-3.5-turbo',
+                    processing_time_ms=processing_time
+                )
+        
         return {
             'statusCode': 200,
             'headers': headers,
             'body': json.dumps({
                 'success': True,
                 'analysis': analysis,
-                'model': 'gpt-3.5-turbo'
+                'model': 'gpt-3.5-turbo',
+                'processing_time_ms': processing_time,
+                'saved_to_db': supabase_client.is_connected()
             })
         }
         
