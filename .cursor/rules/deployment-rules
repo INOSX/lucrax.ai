@@ -259,6 +259,7 @@ def verify_deployment(environment: str) -> bool:
 ### Antes de Qualquer Deploy
 - [ ] **Código testado** localmente
 - [ ] **Testes unitários** passando
+- [ ] **CHANGELOG.md atualizado** com mudanças
 - [ ] **Documentação atualizada**
 - [ ] **Variáveis de ambiente** configuradas
 - [ ] **Branch correto** verificado

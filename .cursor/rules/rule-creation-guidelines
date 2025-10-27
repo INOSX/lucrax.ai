@@ -225,6 +225,7 @@ find . -name "*rules*" -not -path "./.cursor/rules/*"
 ### Após Criar
 - [ ] Validar formato MDC
 - [ ] Testar exemplos de código
+- [ ] Atualizar CHANGELOG.md com mudanças
 - [ ] Atualizar README
 - [ ] Fazer commit com mensagem descritiva
 

@@ -12,6 +12,7 @@ Este diretório contém todas as regras e padrões para o desenvolvimento do pro
 ├── code-standards          # Padrões de código Python
 ├── supabase-rules          # Regras específicas do Supabase
 ├── deployment-rules        # Regras de deploy e ambientes
+├── changelog-rules         # Regras de CHANGELOG
 ├── rule-creation-guidelines # Como criar novas regras
 └── README                  # Este arquivo
 ```
@@ -24,13 +25,19 @@ Este diretório contém todas as regras e padrões para o desenvolvimento do pro
 - **Nomenclatura**: snake_case descritivo
 - **Estrutura**: Template padrão com exemplos e checklists
 
-### 1. **Deploy** (deployment-rules)
+### 1. **CHANGELOG** (changelog-rules)
+- **SEMPRE** manter CHANGELOG.md na raiz do projeto
+- **SEMPRE** atualizar antes de cada commit
+- **SEMPRE** seguir formato Keep a Changelog
+- **SEMPRE** categorizar mudanças corretamente
+
+### 2. **Deploy** (deployment-rules)
 - **SEMPRE** deploy primeiro para desenvolvimento
 - **NUNCA** deploy para produção sem solicitação explícita
 - Usar branch `develop` para desenvolvimento
 - Usar branch `main` apenas quando solicitado
 
-### 2. **Código** (code-standards)
+### 3. **Código** (code-standards)
 - Nomenclatura: PascalCase para classes, snake_case para funções
 - Documentação obrigatória em todas as funções
 - Tratamento de erros consistente

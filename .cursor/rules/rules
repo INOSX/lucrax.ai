@@ -278,6 +278,7 @@ def test_load_data_success():
 
 ### Antes de Commitar
 - [ ] Código testado localmente
+- [ ] CHANGELOG.md atualizado com mudanças
 - [ ] Documentação atualizada
 - [ ] Tratamento de erros implementado
 - [ ] Logs adicionados
