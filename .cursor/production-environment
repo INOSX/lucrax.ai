@@ -4,7 +4,7 @@
 - **URL**: https://lucrax.ai
 - **Staging**: https://staging.lucrax.ai
 - **Branch**: main
-- **Deploy**: APENAS quando solicitado explicitamente
+- **Deploy**: Automático via GitHub (push/merge em `main`)
 - **Configuração**: Variáveis de ambiente de produção
 - **Organização**: INOSX
 - **Projeto ID**: prj_ig3SKAuvThlZSSXmxyWxfveweeKH
@@ -12,18 +12,17 @@
 ## Regras de Deploy para Produção
 
 ###  Permitido APENAS Quando
-- Usuário solicitar explicitamente: "faça deploy para produção"
-- Usuário solicitar explicitamente: "deploy em prod"
-- Usuário solicitar explicitamente: "merge para main"
-- Usuário confirmar: "sim, pode fazer deploy em produção"
-- Usuário usar palavras-chave: "produção", "prod", "main"
+- **Solicitação EXPLÍCITA do usuário**: "faça deploy para produção"
+- **Solicitação EXPLÍCITA do usuário**: "merge para main"
+- **Solicitação EXPLÍCITA do usuário**: "promova para produção"
+- Merge aprovado para `main` APÓS solicitação do usuário
 
 ###  Proibido SEMPRE
-- Deploy automático para produção
-- Push direto para branch main
-- Alteração de configurações de produção
-- Trabalhar diretamente no branch main
-- Deploy sem confirmação explícita
+- **NUNCA trabalhar diretamente no branch `main`**
+- Deploy manual via CLI sem solicitação
+- Push direto para `main` sem solicitação explícita
+- Alteração de configurações de produção sem aprovação
+- Trabalho de desenvolvimento no branch `main`
 
 ## Configurações de Produção
 
@@ -54,13 +53,11 @@
 - [ ] **Testes de integração** realizados
 - [ ] **CHANGELOG.md atualizado**
 - [ ] **Documentação atualizada**
-- [ ] **Backup** do ambiente atual
 - [ ] **Confirmação explícita** do usuário
 
 ### Durante o Deploy
-- [ ] **Branch main** ativo
-- [ ] **Merge de staging** para main
-- [ ] **Deploy de produção** executado
+- [ ] **Merge em main** concluído
+- [ ] **Pipeline do Vercel** finalizado com sucesso
 - [ ] **URL de produção** verificada
 - [ ] **Funcionalidades testadas**
 
@@ -79,16 +76,12 @@
 - Solicitação explícita do usuário
 
 ### Como Fazer Rollback
-`ash
-# 1. Identificar versão estável anterior
-vercel rollback [deployment-url] --prod
-
-# 2. Verificar funcionamento
+```bash
+# 1. Selecionar um deployment estável no Vercel
+# 2. Usar "Redeploy" ou reatribuir domínio (alias)
+# 3. Verificar funcionamento
 curl https://lucrax.ai/api/health
-
-# 3. Notificar equipe
-echo "Rollback realizado para versão estável"
-`
+```
 
 ## Alertas e Notificações
 

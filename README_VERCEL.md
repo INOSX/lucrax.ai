@@ -67,15 +67,31 @@ dataGPT/
 }
 ```
 
+## 🔄 Integração GitHub → Vercel (CI/CD)
+
+- **develop** → Staging (`https://staging.lucrax.ai`)
+- **main** → Produção (`https://lucrax.ai`)
+- Deploy é disparado automaticamente em cada push para o branch correspondente.
+- **NÃO é necessário usar Vercel CLI** para deploy no fluxo padrão.
+
+### Convencões OBRIGATÓRIAS
+- **SEMPRE trabalhar no branch `develop`**
+- Abra PRs para `develop`. Ao merge, o Staging é atualizado automaticamente.
+- **Para produção**: APENAS quando usuário solicitar explicitamente
+  - Usuário deve pedir: "faça deploy para produção" ou "merge para main"
+  - Então criar PR `develop` → `main`
+  - Ao merge, a Produção é atualizada automaticamente
+
+### Rollback
+- Reverter para um deployment anterior no painel do Vercel (Deployments → Redeploy/Assign alias).
+
 ## 🚀 Deploy Rápido
 
 ### Opção 1: Deploy Automático (Recomendado)
-1. **Fork** este repositório
-2. **Conecte** ao Vercel via GitHub
-3. **Configure** as variáveis de ambiente
-4. **Deploy** automático! 🎉
+- Já configurado: GitHub conectado → Vercel com mapeamento de branches.
+- Push para `develop` atualiza Staging; push/merge em `main` atualiza Produção.
 
-### Opção 2: Deploy Manual (projeto específico)
+### Opção 2: Deploy Manual (casos excepcionais)
 ```bash
 # Instalar Vercel CLI
 npm install -g vercel

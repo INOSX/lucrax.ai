@@ -3,7 +3,7 @@
 ## Ambiente de Desenvolvimento
 - **URL**: https://staging.lucrax.ai
 - **Branch**: develop
-- **Deploy**: Automático ao fazer push para develop
+- **Deploy**: Automático via GitHub (push/merge em `develop`)
 - **Configuração**: Variáveis de ambiente de desenvolvimento
 - **Organização**: INOSX
 - **Projeto ID**: prj_ig3SKAuvThlZSSXmxyWxfveweeKH
@@ -11,17 +11,40 @@
 ## Regras de Deploy para Desenvolvimento
 
 ### ✅ Permitido SEMPRE
-- Deploy automático para desenvolvimento
-- Push para branch `develop`
+- **SEMPRE trabalhar no branch `develop`**
+- Push/merge para `develop` (CI dispara deploy no Staging)
 - Testes em ambiente de desenvolvimento
-- Correções em ambiente de desenvolvimento
-- Desenvolvimento de novas funcionalidades
+- Correções e novas funcionalidades
+- Criação de branches feature a partir de `develop`
 
 ### ❌ Proibido SEMPRE
-- Deploy para produção sem confirmação explícita
+- **NUNCA trabalhar diretamente no branch `main`**
+- Deploy manual para produção
 - Alteração de configurações de produção
-- Trabalhar diretamente no branch `main`
-- Deploy sem testes em desenvolvimento
+- Push direto para `main` sem solicitação explícita
+
+## Fluxo de Trabalho OBRIGATÓRIO
+1. **SEMPRE trabalhar no branch `develop`**
+2. Crie branches feature a partir de `develop`
+3. Abra PR para `develop`
+4. Após merge, o Staging é atualizado automaticamente (Vercel)
+5. **Para produção**: APENAS quando usuário solicitar explicitamente
+   - Usuário deve pedir: "faça deploy para produção" ou "merge para main"
+   - Então criar PR `develop` → `main`
+   - Após merge, a Produção é atualizada automaticamente (Vercel)
+
+## Monitoramento
+- Health check: https://staging.lucrax.ai/api/health
+- Logs de debug em tempo real
+- Métricas de performance
+
+## Rollback de Desenvolvimento
+```bash
+# 1. Selecionar deployment anterior no Vercel
+# 2. Redeploy (ou reatribuir alias de staging)
+# 3. Verificar funcionamento
+curl https://staging.lucrax.ai/api/health
+```
 
 ## Configurações de Desenvolvimento
 
@@ -65,31 +88,6 @@
 - [ ] **Performance verificada**
 - [ ] **Preparação para produção** avaliada
 
-## Fluxo de Deploy para Desenvolvimento
-
-### Desenvolvimento
-```bash
-# 1. Fazer mudanças no develop
-git checkout develop
-# ... fazer mudanças ...
-git add .
-git commit -m "feat: nova funcionalidade"
-git push origin develop
-# Deploy automático para lucrax-ai-develop.vercel.app
-```
-
-### Desenvolvimento → Produção
-```bash
-# 1. Testar em desenvolvimento
-# Acessar https://lucrax-ai-develop.vercel.app e testar
-
-# 2. Merge para produção (apenas quando solicitado)
-git checkout main
-git merge develop
-git push origin main
-# Deploy automático para lucrax.ai
-```
-
 ## Testes em Desenvolvimento
 
 ### Testes Obrigatórios
@@ -106,26 +104,6 @@ git push origin main
 - [ ] **CORS** funcionando
 - [ ] **Rate limiting** adequado
 - [ ] **Logs** sendo gerados
-
-## Rollback de Desenvolvimento
-
-### Quando Fazer Rollback
-- Erro crítico em desenvolvimento
-- Performance muito degradada
-- Falha de integração
-- Solicitação do usuário
-
-### Como Fazer Rollback
-```bash
-# 1. Identificar versão estável anterior
-vercel rollback [deployment-url] --target development
-
-# 2. Verificar funcionamento
-curl https://staging.lucrax.ai/api/health
-
-# 3. Notificar equipe
-echo "Rollback de desenvolvimento realizado"
-```
 
 ## Alertas e Notificações
 

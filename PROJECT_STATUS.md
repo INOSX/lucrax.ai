@@ -8,6 +8,17 @@
 
 ---
 
+## 🚦 CI/CD
+- **develop → Staging**: https://staging.lucrax.ai (deploy automático por push/merge)
+- **main → Produção**: https://lucrax.ai (deploy automático por push/merge)
+
+### Regras OBRIGATÓRIAS
+- **SEMPRE trabalhar no branch `develop`**
+- **NUNCA trabalhar diretamente no branch `main`**
+- **Para produção**: APENAS quando usuário solicitar explicitamente
+
+---
+
 ## 🗄️ Banco de Dados Supabase
 
 ### Projeto Ativo
