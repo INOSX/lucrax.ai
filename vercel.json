@@ -7,11 +7,11 @@
     },
     {
       "src": "/",
-      "dest": "/index.html"
+      "dest": "/api/dash.py"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.py"
+      "dest": "/api/dash.py"
     }
   ]
 }
