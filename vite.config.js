@@ -16,7 +16,16 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          charts: ['chart.js', 'react-chartjs-2'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
   },
   define: {
     global: 'globalThis',
