@@ -1,11 +1,11 @@
 // Configuração de variáveis de ambiente
 export const config = {
   supabase: {
-    url: import.meta.env.supabase_url || '',
-    anonKey: import.meta.env.supabase_anon_key || '',
+    url: import.meta.env.SUPABASE_URL || '',
+    anonKey: import.meta.env.SUPABASE_ANON_KEY || '',
   },
   openai: {
-    apiKey: import.meta.env.openai_api_key || '',
+    apiKey: import.meta.env.OPENAI_API_KEY || '',
   }
 }
 
@@ -14,11 +14,11 @@ export const validateEnv = () => {
   const errors = []
   
   if (!config.supabase.url) {
-    errors.push('supabase_url is required')
+    errors.push('SUPABASE_URL is required')
   }
   
   if (!config.supabase.anonKey) {
-    errors.push('supabase_anon_key is required')
+    errors.push('SUPABASE_ANON_KEY is required')
   }
   
   if (errors.length > 0) {

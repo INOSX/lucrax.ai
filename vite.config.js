@@ -5,6 +5,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  envPrefix: '', // Permite o uso de variáveis de ambiente sem prefixo VITE_
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -29,8 +30,8 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
-    'import.meta.env.supabase_url': JSON.stringify(process.env.supabase_url),
-    'import.meta.env.supabase_anon_key': JSON.stringify(process.env.supabase_anon_key),
-    'import.meta.env.openai_api_key': JSON.stringify(process.env.openai_api_key),
+    'import.meta.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL),
+    'import.meta.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY),
+    'import.meta.env.OPENAI_API_KEY': JSON.stringify(process.env.OPENAI_API_KEY),
   },
 })
