@@ -8,7 +8,7 @@ import {
   TrendingUp,
   PieChart,
   BarChart2,
-  Scatter,
+  Zap,
   Activity
 } from 'lucide-react'
 
@@ -54,7 +54,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       type: 'pie'
     },
     {
-      icon: Scatter,
+      icon: Zap,
       label: 'Gráfico de Dispersão',
       type: 'scatter'
     },
