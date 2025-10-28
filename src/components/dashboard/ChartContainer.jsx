@@ -3,7 +3,7 @@ import {
   BarChart3, 
   TrendingUp, 
   PieChart, 
-  Scatter, 
+  Zap, 
   Activity,
   Settings,
   Download,
@@ -35,7 +35,7 @@ const ChartContainer = ({
     { id: 'line', name: 'Linha', icon: TrendingUp },
     { id: 'bar', name: 'Barras', icon: BarChart3 },
     { id: 'pie', name: 'Pizza', icon: PieChart },
-    { id: 'scatter', name: 'Dispersão', icon: Scatter },
+    { id: 'scatter', name: 'Dispersão', icon: Zap },
     { id: 'area', name: 'Área', icon: Activity }
   ]
 
