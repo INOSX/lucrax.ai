@@ -153,7 +153,7 @@ class DataValidator:
         Returns:
             Tuple[bool, Optional[str]]: (is_valid, error_message)
         """
-        valid_types = ['Linha', 'Barra', 'Dispersão', 'Histograma', 'Boxplot', 'Heatmap', 'Áreas', 'Violino']
+        valid_types = ['Linha', 'Barra', 'Dispersão', 'Histograma', 'Boxplot', 'Heatmap', 'Áreas', 'Violino', 'Bar', 'Line', 'Scatter', 'Pie', 'Area']
         
         if not chart_type:
             return False, "Tipo de gráfico não selecionado"

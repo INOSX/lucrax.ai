@@ -15,7 +15,7 @@ class ChartGenerator:
     """Classe para geração de gráficos com validação e tratamento de erros"""
     
     def __init__(self):
-        self.supported_types = ['Linha', 'Barra', 'Dispersão', 'Histograma', 'Boxplot', 'Heatmap', 'Áreas', 'Violino']
+        self.supported_types = ['Linha', 'Barra', 'Dispersão', 'Histograma', 'Boxplot', 'Heatmap', 'Áreas', 'Violino', 'Bar', 'Line', 'Scatter', 'Pie', 'Area']
     
     def generate_chart(self, data: pd.DataFrame, x_col: str, y_col: str, 
                       chart_type: str, chart_config: Dict[str, Any]) -> Tuple[bool, Optional[Any], Optional[str]]:
@@ -43,7 +43,7 @@ class ChartGenerator:
                 return False, None, error
             
             # Gerar gráfico baseado no tipo
-            if chart_type in ['Linha', 'Barra', 'Dispersão', 'Áreas']:
+            if chart_type in ['Linha', 'Barra', 'Dispersão', 'Áreas', 'Bar', 'Line', 'Scatter', 'Area', 'Pie']:
                 return self._generate_plotly_chart(data, x_col, y_col, chart_type, chart_config)
             else:
                 return self._generate_matplotlib_chart(data, x_col, y_col, chart_type, chart_config)
@@ -63,22 +63,31 @@ class ChartGenerator:
             show_totals = config.get('show_totals', False)
             
             # Gerar gráfico baseado no tipo
-            if chart_type == 'Linha':
+            if chart_type in ['Linha', 'Line']:
                 fig = px.line(data, x=x_col, y=y_col, title=title, 
                             labels={x_col: x_label, y_col: y_label}, 
                             color_discrete_sequence=[color])
-            elif chart_type == 'Barra':
+            elif chart_type in ['Barra', 'Bar']:
                 fig = px.bar(data, x=x_col, y=y_col, title=title, 
                            labels={x_col: x_label, y_col: y_label}, 
                            color_discrete_sequence=[color])
-            elif chart_type == 'Dispersão':
+            elif chart_type in ['Dispersão', 'Scatter']:
                 fig = px.scatter(data, x=x_col, y=y_col, title=title, 
                                labels={x_col: x_label, y_col: y_label}, 
                                color_discrete_sequence=[color])
-            elif chart_type == 'Áreas':
+            elif chart_type in ['Áreas', 'Area']:
                 fig = px.area(data, x=x_col, y=y_col, title=title, 
                             labels={x_col: x_label, y_col: y_label}, 
                             color_discrete_sequence=[color])
+            elif chart_type == 'Pie':
+                # Para gráfico de pizza, usar contagem de valores únicos
+                value_counts = data[x_col].value_counts().head(10)
+                fig = px.pie(
+                    values=value_counts.values,
+                    names=value_counts.index,
+                    title=title,
+                    color_discrete_sequence=px.colors.qualitative.Set3
+                )
             else:
                 return False, None, f"Tipo de gráfico {chart_type} não suportado pelo Plotly"
             
