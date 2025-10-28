@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dataGPT v2.6 - API Test</title>
+    <title>Lucrax.ai - API</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
@@ -107,12 +107,12 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚀 dataGPT v2.6 - API Test</h1>
-        <p>Teste a API do dataGPT v2.6 no Vercel</p>
+        <h1>🚀 Lucrax.ai - API</h1>
+        <p>Teste a API do Lucrax.ai no Vercel</p>
         
         <div class="form-group">
             <label for="apiUrl">URL da API:</label>
-            <input type="text" id="apiUrl" value="https://datagpt.vercel.app/api" placeholder="https://seu-projeto.vercel.app/api">
+            <input type="text" id="apiUrl" value="" placeholder="https://lucrax.ai/api">
         </div>
         
         <div class="form-group">
@@ -138,7 +138,11 @@
         let currentData = null;
         let currentChartConfig = null;
         
-        const API_URL = document.getElementById('apiUrl').value;
+        // Por padrão, usar a própria origem (produção/staging) com fallback para lucrax.ai
+        const defaultApiUrl = `${window.location.origin}/api`;
+        const apiUrlInput = document.getElementById('apiUrl');
+        apiUrlInput.value = defaultApiUrl || 'https://lucrax.ai/api';
+        const API_URL = apiUrlInput.value;
         
         async function makeRequest(action, data) {
             const response = await fetch(API_URL, {
