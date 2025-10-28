@@ -6,6 +6,15 @@ import streamlit as st
 import requests
 from typing import Tuple, Optional
 from src.validators import DataValidator, SecurityValidator
+import sys
+
+# Garantir encoding UTF-8 no stdout/stderr (evita caracteres truncados)
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+except Exception:
+    # Compatibilidade com ambientes que não expõem reconfigure
+    pass
 
 class DataLoader:
     """Classe para carregamento e validação de dados"""
@@ -17,28 +26,28 @@ class DataLoader:
         })
     
     def get_csv_export_url(self, url: str) -> Tuple[bool, Optional[str], Optional[str]]:
-    """
-    Converte o URL de visualização do Google Sheets para um URL de exportação CSV.
+        """
+        Converte o URL de visualização do Google Sheets para um URL de exportação CSV.
 
         Args:
-    url (str): O URL de visualização do Google Sheets.
+            url (str): O URL de visualização do Google Sheets.
 
-    Returns:
+        Returns:
             Tuple[bool, Optional[str], Optional[str]]: (success, csv_url, error_message)
-    """
-    try:
+        """
+        try:
             # Sanitizar URL
             url = SecurityValidator.sanitize_input(url, max_length=500)
-            
+
             # Validar URL do Google Sheets
             is_valid, file_id, error = DataValidator.validate_google_sheets_url(url)
             if not is_valid:
                 return False, None, error
-            
+
             # Construir URL de exportação CSV
             csv_export_url = f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=csv"
             return True, csv_export_url, None
-            
+
         except Exception as e:
             return False, None, f"Erro ao processar URL: {str(e)}"
     
@@ -68,7 +77,7 @@ class DataLoader:
             
             # Carregar dados no DataFrame
             from io import StringIO
-            data = pd.read_csv(StringIO(response.text))
+            data = pd.read_csv(StringIO(response.text), encoding='utf-8')
             
             # Validar DataFrame
             is_valid, error = DataValidator.validate_dataframe(data)
@@ -109,6 +118,11 @@ class DataLoader:
         # Converter colunas de data se possível
         for col in cleaned_data.columns:
             if cleaned_data[col].dtype == 'object':
+                # Normalizar/garantir UTF-8 para evitar caracteres truncados
+                try:
+                    cleaned_data[col] = cleaned_data[col].astype(str).str.encode('utf-8', errors='ignore').str.decode('utf-8')
+                except Exception:
+                    pass
                 # Tentar converter para data
                 try:
                     cleaned_data[col] = pd.to_datetime(cleaned_data[col], errors='ignore')

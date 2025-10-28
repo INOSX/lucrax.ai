@@ -1,0 +1,193 @@
+﻿# Lucrax.ai - Regras do Ambiente de Desenvolvimento
+
+## Ambiente de Desenvolvimento
+- **URL**: https://lucrax-ai-develop.vercel.app
+- **Branch**: develop
+- **Deploy**: Automático ao fazer push para develop
+- **Configuração**: Variáveis de ambiente de desenvolvimento
+
+## Regras de Deploy para Desenvolvimento
+
+### ✅ Permitido SEMPRE
+- Deploy automático para desenvolvimento
+- Push para branch `develop`
+- Testes em ambiente de desenvolvimento
+- Correções em ambiente de desenvolvimento
+- Desenvolvimento de novas funcionalidades
+
+### ❌ Proibido SEMPRE
+- Deploy para produção sem confirmação explícita
+- Alteração de configurações de produção
+- Trabalhar diretamente no branch `main`
+- Deploy sem testes em desenvolvimento
+
+## Configurações de Desenvolvimento
+
+### Variáveis de Ambiente
+- NODE_ENV=development
+- VERCEL_ENV=development
+- DEBUG=true
+- LOG_LEVEL=debug
+- Supabase: Projeto de desenvolvimento (mesmo da produção)
+- OpenAI: API key de desenvolvimento
+
+### Segurança
+- CORS configurado para domínio de desenvolvimento
+- Rate limiting ativado (mais permissivo)
+- Logs detalhados habilitados
+- Monitoramento de performance ativo
+
+### Monitoramento
+- Health check: https://lucrax-ai-develop.vercel.app/api/health
+- Logs de debug em tempo real
+- Métricas de performance
+- Alertas de falhas (menos críticos)
+
+## Checklist de Deploy para Desenvolvimento
+
+### Antes do Deploy
+- [ ] **Código testado** localmente
+- [ ] **Testes unitários** passando
+- [ ] **CHANGELOG.md atualizado**
+- [ ] **Documentação atualizada**
+
+### Durante o Deploy
+- [ ] **Branch develop** ativo
+- [ ] **Deploy automático** executado
+- [ ] **URL de desenvolvimento** verificada
+- [ ] **Funcionalidades testadas**
+
+### Após o Deploy
+- [ ] **Testes de integração** realizados
+- [ ] **Logs verificados** para erros
+- [ ] **Performance verificada**
+- [ ] **Preparação para produção** avaliada
+
+## Fluxo de Deploy para Desenvolvimento
+
+### Desenvolvimento
+```bash
+# 1. Fazer mudanças no develop
+git checkout develop
+# ... fazer mudanças ...
+git add .
+git commit -m "feat: nova funcionalidade"
+git push origin develop
+# Deploy automático para lucrax-ai-develop.vercel.app
+```
+
+### Desenvolvimento → Produção
+```bash
+# 1. Testar em desenvolvimento
+# Acessar https://lucrax-ai-develop.vercel.app e testar
+
+# 2. Merge para produção (apenas quando solicitado)
+git checkout main
+git merge develop
+git push origin main
+# Deploy automático para lucrax.ai
+```
+
+## Testes em Desenvolvimento
+
+### Testes Obrigatórios
+- [ ] **Carregamento de dados** do Google Sheets
+- [ ] **Geração de gráficos** (todos os tipos)
+- [ ] **Análise com IA** (OpenAI)
+- [ ] **Integração com Supabase**
+- [ ] **Performance** da API
+- [ ] **Interface** responsiva
+
+### Testes de Integração
+- [ ] **Fluxo completo** de dados
+- [ ] **Persistência** no banco
+- [ ] **CORS** funcionando
+- [ ] **Rate limiting** adequado
+- [ ] **Logs** sendo gerados
+
+## Rollback de Desenvolvimento
+
+### Quando Fazer Rollback
+- Erro crítico em desenvolvimento
+- Performance muito degradada
+- Falha de integração
+- Solicitação do usuário
+
+### Como Fazer Rollback
+```bash
+# 1. Identificar versão estável anterior
+vercel rollback [deployment-url] --target development
+
+# 2. Verificar funcionamento
+curl https://lucrax-ai-develop.vercel.app/api/health
+
+# 3. Notificar equipe
+echo "Rollback de desenvolvimento realizado"
+```
+
+## Alertas e Notificações
+
+### Deploy de Desenvolvimento
+- ✅ Log: "Deploy de desenvolvimento realizado"
+- ✅ Notificação: "Ambiente de desenvolvimento atualizado"
+- 📧 Email: "Deploy de desenvolvimento realizado em [timestamp]"
+
+### Falhas em Desenvolvimento
+- ⚠️ Alerta: "Falha em desenvolvimento"
+- 📞 Notificação: "Verificar desenvolvimento"
+- 🔄 Rollback: "Considerar rollback se necessário"
+
+## Regras de Acesso
+
+### Quem Pode Fazer Deploy
+- Qualquer desenvolvedor autorizado
+- Deploy automático ao fazer push
+- Desenvolvimento contínuo
+
+### Quem Pode Fazer Rollback
+- Desenvolvedor autorizado
+- Em caso de falha crítica
+- Com justificativa documentada
+
+## Backup e Recuperação
+
+### Backup Automático
+- Backup antes de cada deploy
+- Backup diário do banco de dados
+- Backup semanal dos arquivos
+
+### Recuperação
+- Tempo de recuperação: < 10 minutos
+- Procedimento documentado
+- Teste semanal de recuperação
+
+## Monitoramento de Desenvolvimento
+
+### Métricas Importantes
+- Tempo de resposta da API
+- Taxa de erro por endpoint
+- Uso de recursos (CPU, memória)
+- Requisições por minuto
+
+### Alertas Configurados
+- Tempo de resposta > 5 segundos
+- Taxa de erro > 5%
+- Uso de CPU > 80%
+- Falhas de integração
+
+## Preparação para Produção
+
+### Checklist Pré-Produção
+- [ ] **Todos os testes** passando
+- [ ] **Performance** adequada
+- [ ] **Logs** limpos
+- [ ] **Documentação** atualizada
+- [ ] **CHANGELOG** atualizado
+- [ ] **Aprovação** do usuário
+
+### Critérios de Aprovação
+- Zero erros críticos
+- Performance < 3 segundos
+- Todos os testes passando
+- Documentação completa
+- Confirmação explícita do usuário

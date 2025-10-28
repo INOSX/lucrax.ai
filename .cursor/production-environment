@@ -1,0 +1,149 @@
+﻿# Lucrax.ai - Regras do Ambiente de Produção
+
+## Ambiente de Produção
+- **URL**: https://lucrax.ai
+- **Branch**: main
+- **Deploy**: APENAS quando solicitado explicitamente
+- **Configuração**: Variáveis de ambiente de produção
+
+## Regras de Deploy para Produção
+
+###  Permitido APENAS Quando
+- Usuário solicitar explicitamente: "faça deploy para produção"
+- Usuário solicitar explicitamente: "deploy em prod"
+- Usuário solicitar explicitamente: "merge para main"
+- Usuário confirmar: "sim, pode fazer deploy em produção"
+- Usuário usar palavras-chave: "produção", "prod", "main"
+
+###  Proibido SEMPRE
+- Deploy automático para produção
+- Push direto para branch main
+- Alteração de configurações de produção
+- Trabalhar diretamente no branch main
+- Deploy sem confirmação explícita
+
+## Configurações de Produção
+
+### Variáveis de Ambiente
+- NODE_ENV=production
+- VERCEL_ENV=production
+- DEBUG=false
+- LOG_LEVEL=info
+- Supabase: Projeto de produção
+- OpenAI: API key de produção
+
+### Segurança
+- CORS configurado para domínio de produção
+- Rate limiting ativado
+- Logs de auditoria habilitados
+- Monitoramento de performance ativo
+
+### Monitoramento
+- Health check: https://lucrax.ai/api/health
+- Logs de erro em tempo real
+- Métricas de performance
+- Alertas de falhas críticas
+
+## Checklist de Deploy para Produção
+
+### Antes do Deploy
+- [ ] **Código testado** em staging
+- [ ] **Testes de integração** realizados
+- [ ] **CHANGELOG.md atualizado**
+- [ ] **Documentação atualizada**
+- [ ] **Backup** do ambiente atual
+- [ ] **Confirmação explícita** do usuário
+
+### Durante o Deploy
+- [ ] **Branch main** ativo
+- [ ] **Merge de staging** para main
+- [ ] **Deploy de produção** executado
+- [ ] **URL de produção** verificada
+- [ ] **Funcionalidades testadas**
+
+### Após o Deploy
+- [ ] **Monitoramento ativo** por 30 minutos
+- [ ] **Logs verificados** para erros
+- [ ] **Performance verificada**
+- [ ] **Usuários notificados** se necessário
+
+## Rollback de Produção
+
+### Quando Fazer Rollback
+- Erro crítico em produção
+- Performance degradada
+- Falha de segurança
+- Solicitação explícita do usuário
+
+### Como Fazer Rollback
+`ash
+# 1. Identificar versão estável anterior
+vercel rollback [deployment-url] --prod
+
+# 2. Verificar funcionamento
+curl https://lucrax.ai/api/health
+
+# 3. Notificar equipe
+echo "Rollback realizado para versão estável"
+`
+
+## Alertas e Notificações
+
+### Deploy de Produção
+-  Log: "ATENÇÃO: Deploy de produção realizado"
+-  Notificação: "Ambiente de produção atualizado"
+-  Email: "Deploy de produção realizado em [timestamp]"
+
+### Falhas Críticas
+-  Alerta: "Falha crítica em produção"
+-  Notificação: "Ação imediata necessária"
+-  Rollback: "Iniciando rollback automático"
+
+## Regras de Acesso
+
+### Quem Pode Fazer Deploy
+- Apenas usuário autorizado
+- Com confirmação explícita
+- Após testes em staging
+
+### Quem Pode Fazer Rollback
+- Usuário autorizado
+- Em caso de falha crítica
+- Com justificativa documentada
+
+## Backup e Recuperação
+
+### Backup Automático
+- Backup diário do banco de dados
+- Backup semanal dos arquivos
+- Backup antes de cada deploy
+
+### Recuperação
+- Tempo de recuperação: < 15 minutos
+- Procedimento documentado
+- Teste mensal de recuperação
+
+## Conformidade e Auditoria
+
+### Logs de Auditoria
+- Todas as ações registradas
+- Usuário e timestamp
+- Justificativa para mudanças
+
+### Conformidade
+- LGPD/GDPR compliance
+- Segurança de dados
+- Backup e recuperação
+
+## Contatos de Emergência
+
+### Em Caso de Falha
+1. Verificar logs do Vercel
+2. Consultar monitoramento
+3. Executar rollback se necessário
+4. Notificar usuários afetados
+
+### Escalação
+- Nível 1: Verificação automática
+- Nível 2: Intervenção manual
+- Nível 3: Contato de emergência
