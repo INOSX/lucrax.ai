@@ -1,9 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
+import { config } from '../config/env.js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Validação das variáveis de ambiente
+if (!config.supabase.url) {
+  throw new Error('VITE_SUPABASE_URL is required. Please check your environment variables.')
+}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (!config.supabase.anonKey) {
+  throw new Error('VITE_SUPABASE_ANON_KEY is required. Please check your environment variables.')
+}
+
+export const supabase = createClient(config.supabase.url, config.supabase.anonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
