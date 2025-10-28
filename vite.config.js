@@ -29,5 +29,8 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+    'import.meta.env.supabase_url': JSON.stringify(process.env.supabase_url),
+    'import.meta.env.supabase_anon_key': JSON.stringify(process.env.supabase_anon_key),
+    'import.meta.env.openai_api_key': JSON.stringify(process.env.openai_api_key),
   },
 })

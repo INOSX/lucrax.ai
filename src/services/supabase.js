@@ -3,11 +3,11 @@ import { config } from '../config/env.js'
 
 // Validação das variáveis de ambiente
 if (!config.supabase.url) {
-  throw new Error('VITE_SUPABASE_URL is required. Please check your environment variables.')
+  throw new Error('supabase_url is required. Please check your environment variables.')
 }
 
 if (!config.supabase.anonKey) {
-  throw new Error('VITE_SUPABASE_ANON_KEY is required. Please check your environment variables.')
+  throw new Error('supabase_anon_key is required. Please check your environment variables.')
 }
 
 export const supabase = createClient(config.supabase.url, config.supabase.anonKey, {
