@@ -236,7 +236,7 @@ console.log(data);
 
 ## 📞 Suporte
 
-- **GitHub Issues**: [m2f0/dataGPT/issues](https://github.com/m2f0/dataGPT/issues)
+- **GitHub Issues**: [INOSX/lucrax.ai/issues](https://github.com/INOSX/lucrax.ai/issues)
 - **Vercel Community**: [vercel/vercel/discussions](https://github.com/vercel/vercel/discussions)
 - **Documentação Completa**: [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
 

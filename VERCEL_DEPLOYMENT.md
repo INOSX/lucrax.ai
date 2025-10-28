@@ -298,6 +298,6 @@ Para problemas específicos do Vercel:
 - [Vercel Community](https://github.com/vercel/vercel/discussions)
 - [Status Page](https://vercel-status.com/)
 
-Para problemas do dataGPT:
-- [GitHub Issues](https://github.com/m2f0/dataGPT/issues)
+Para problemas do Lucrax.ai:
+- [GitHub Issues](https://github.com/INOSX/lucrax.ai/issues)
 - [Documentação do Projeto](README.md)
