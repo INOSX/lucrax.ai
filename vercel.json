@@ -6,6 +6,10 @@
       "dest": "/api/index_simple.py"
     },
     {
+      "src": "/api",
+      "dest": "/api/index_simple.py"
+    },
+    {
       "src": "/",
       "dest": "/api/dash.py"
     },

@@ -1,4 +1,9 @@
 # Dependências para Vercel (otimizadas)
+pytz
+pydantic
+serverless-wsgi>=1.7.8
+dash>=2.17.0
+dash-bootstrap-components>=1.6.0
 pandas>=1.5.0
 plotly>=5.15.0
 matplotlib>=3.6.0
