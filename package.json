@@ -5,8 +5,7 @@
   "main": "api/index.py",
   "scripts": {
     "dev": "vercel dev",
-    "build": "python -m pip install -r requirements-vercel.txt",
-    "start": "python api/index.py"
+    "start": "echo 'Serverless API via Vercel Python runtime'"
   },
   "keywords": [
     "data",
@@ -22,7 +21,5 @@
     "node": ">=18.0.0"
   },
   "dependencies": {},
-  "devDependencies": {
-    "vercel": "^32.0.0"
-  }
+  "devDependencies": {}
 }
