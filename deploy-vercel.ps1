@@ -1,6 +1,6 @@
-# Script PowerShell para deploy do dataGPT v2.6 no Vercel
-Write-Host "🚀 Deploy do dataGPT v2.6 no Vercel" -ForegroundColor Green
-Write-Host "==================================" -ForegroundColor Green
+# Script PowerShell para deploy do Lucrax.ai no Vercel
+Write-Host "🚀 Deploy do Lucrax.ai no Vercel" -ForegroundColor Green
+Write-Host "=================================" -ForegroundColor Green
 
 # Verificar se o Vercel CLI está instalado
 try {
@@ -30,10 +30,13 @@ if (-not (Test-Path ".env")) {
 }
 
 # Fazer deploy
-Write-Host "📦 Fazendo deploy..." -ForegroundColor Blue
-vercel --prod
+Write-Host "📦 Fazendo deploy de preview (staging)..." -ForegroundColor Blue
+vercel --confirm --scope inosx
+
+Write-Host "📦 Fazendo deploy de produção..." -ForegroundColor Blue
+vercel --prod --confirm --scope inosx
 
 Write-Host "✅ Deploy concluído!" -ForegroundColor Green
-Write-Host "🌐 Acesse sua aplicação no URL fornecido pelo Vercel" -ForegroundColor Cyan
-Write-Host "📊 Teste a API em: https://seu-projeto.vercel.app/api" -ForegroundColor Cyan
-Write-Host "🖥️  Interface web em: https://seu-projeto.vercel.app/" -ForegroundColor Cyan
+Write-Host "🌐 Produção: https://lucrax.ai" -ForegroundColor Cyan
+Write-Host "🧪 Staging: https://staging.lucrax.ai" -ForegroundColor Cyan
+Write-Host "📊 API: https://lucrax.ai/api" -ForegroundColor Cyan

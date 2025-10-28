@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "name": "lucrax.ai",
+  "projectId": "prj_ig3SKAuvThlZSSXmxyWxfveweeKH",
+  "orgId": "team_a7wY6EtJ0qf3fHN5Sll69FUy",
   "routes": [
     {
       "src": "/api/(.*)",
@@ -13,5 +16,8 @@
       "src": "/(.*)",
       "dest": "/api/index.py"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

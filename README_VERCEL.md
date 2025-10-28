@@ -75,7 +75,7 @@ dataGPT/
 3. **Configure** as variáveis de ambiente
 4. **Deploy** automático! 🎉
 
-### Opção 2: Deploy Manual
+### Opção 2: Deploy Manual (projeto específico)
 ```bash
 # Instalar Vercel CLI
 npm install -g vercel
@@ -83,8 +83,17 @@ npm install -g vercel
 # Fazer login
 vercel login
 
-# Deploy
-vercel --prod
+# Vincular ao projeto correto (ID)
+vercel link --project lucrax.ai --scope inosx
+
+# Garantir Project ID correto no .vercel/project.json
+# projectId: prj_ig3SKAuvThlZSSXmxyWxfveweeKH
+
+# Deploy de preview (staging)
+vercel --confirm --scope inosx
+
+# Deploy de produção
+vercel --prod --confirm --scope inosx
 ```
 
 ### Opção 3: Scripts Automatizados
@@ -119,15 +128,15 @@ API_BASE_URL=http://93.127.210.77:5000
 ## 🧪 Testando a API
 
 ### Interface Web
-Acesse `https://seu-projeto.vercel.app/` para usar a interface de teste.
+Acesse `https://lucrax.ai/` para usar a interface de teste.
 
 ### Exemplo com cURL
 ```bash
 # Testar status
-curl https://seu-projeto.vercel.app/api
+curl https://lucrax.ai/api
 
 # Carregar dados
-curl -X POST https://seu-projeto.vercel.app/api \
+curl -X POST https://lucrax.ai/api \
   -H "Content-Type: application/json" \
   -d '{"action": "load_data", "url": "https://docs.google.com/spreadsheets/d/..."}'
 ```

@@ -1,10 +1,12 @@
 ﻿# Lucrax.ai - Regras do Ambiente de Desenvolvimento
 
 ## Ambiente de Desenvolvimento
-- **URL**: https://lucrax-ai-develop.vercel.app
+- **URL**: https://staging.lucrax.ai
 - **Branch**: develop
 - **Deploy**: Automático ao fazer push para develop
 - **Configuração**: Variáveis de ambiente de desenvolvimento
+- **Organização**: INOSX
+- **Projeto ID**: prj_ig3SKAuvThlZSSXmxyWxfveweeKH
 
 ## Regras de Deploy para Desenvolvimento
 
@@ -38,7 +40,7 @@
 - Monitoramento de performance ativo
 
 ### Monitoramento
-- Health check: https://lucrax-ai-develop.vercel.app/api/health
+- Health check: https://staging.lucrax.ai/api/health
 - Logs de debug em tempo real
 - Métricas de performance
 - Alertas de falhas (menos críticos)
@@ -119,7 +121,7 @@ git push origin main
 vercel rollback [deployment-url] --target development
 
 # 2. Verificar funcionamento
-curl https://lucrax-ai-develop.vercel.app/api/health
+curl https://staging.lucrax.ai/api/health
 
 # 3. Notificar equipe
 echo "Rollback de desenvolvimento realizado"

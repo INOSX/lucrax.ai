@@ -2,9 +2,12 @@
 
 ## Ambiente de Produção
 - **URL**: https://lucrax.ai
+- **Staging**: https://staging.lucrax.ai
 - **Branch**: main
 - **Deploy**: APENAS quando solicitado explicitamente
 - **Configuração**: Variáveis de ambiente de produção
+- **Organização**: INOSX
+- **Projeto ID**: prj_ig3SKAuvThlZSSXmxyWxfveweeKH
 
 ## Regras de Deploy para Produção
 

@@ -1,8 +1,8 @@
-# 📊 Status do Projeto dataGPT v2.6
+# 📊 Status do Projeto Lucrax.ai
 
 ## ✅ Status Atual: FUNCIONANDO
 
-**Data da Atualização**: 27 de Outubro de 2025  
+**Data da Atualização**: 28 de Outubro de 2025  
 **Versão**: 2.6  
 **Status**: ✅ **Produção Ativa**
 
@@ -33,9 +33,12 @@
 ## 🚀 Deploy Vercel
 
 ### Status
-- **URL**: `https://datagpt-9nh9cthy6-m2f0s-projects.vercel.app`
+- **Produção**: `https://lucrax.ai`
+- **Staging**: `https://staging.lucrax.ai`
 - **Status**: ✅ **Deploy ativo**
 - **Framework**: Python (Serverless Functions)
+- **Organização**: INOSX
+- **Projeto ID**: `prj_ig3SKAuvThlZSSXmxyWxfveweeKH`
 
 ### Variáveis de Ambiente
 - ✅ **OpenAI API**: Configurada
@@ -107,5 +110,5 @@
 
 ---
 
-**Última verificação**: 27/10/2025 14:06 UTC  
-**Próxima verificação**: 28/10/2025 14:06 UTC
+**Última verificação**: 28/10/2025 13:30 UTC  
+**Próxima verificação**: 29/10/2025 13:30 UTC
