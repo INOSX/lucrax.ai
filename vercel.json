@@ -11,11 +11,11 @@
     },
     {
       "src": "/",
-      "dest": "/api/dash.py"
+      "dest": "/api/dash_simple.py"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/dash.py"
+      "dest": "/api/dash_simple.py"
     }
   ]
 }
