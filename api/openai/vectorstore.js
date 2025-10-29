@@ -179,10 +179,11 @@ export default async function handler(req, res) {
         } catch (error) {
           console.error('Erro ao deletar vectorstore via SDK:', error)
           // Fallback: usar API REST diretamente
-          const response = await fetch(`https://api.openaiClient.com/v1/vector_stores/${params.vectorstoreId}`, {
+          const response = await fetch(`https://api.openai.com/v1/vector_stores/${params.vectorstoreId}`, {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'OpenAI-Beta': 'assistants=v2'
             }
           })
           
@@ -216,7 +217,25 @@ export default async function handler(req, res) {
       case 'checkVectorstoreExists':
         console.log('Verificando se vectorstore existe...', params.vectorstoreId)
         try {
-          const vectorstore = await openaiClient.beta.vectorStores.retrieve(params.vectorstoreId)
+          let vectorstore
+          if (openaiClient?.beta?.vectorStores?.retrieve) {
+            vectorstore = await openaiClient.beta.vectorStores.retrieve(params.vectorstoreId)
+          } else {
+            // Fallback REST
+            const response = await fetch(`https://api.openai.com/v1/vector_stores/${params.vectorstoreId}`, {
+              headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'OpenAI-Beta': 'assistants=v2'
+              }
+            })
+            if (!response.ok) {
+              if (response.status === 404) {
+                return res.status(200).json({ exists: false })
+              }
+              throw new Error(`API REST falhou: ${response.status} ${response.statusText}`)
+            }
+            vectorstore = await response.json()
+          }
           console.log('Vectorstore encontrado:', vectorstore.id)
           return res.status(200).json({ exists: true, vectorstore })
         } catch (error) {
