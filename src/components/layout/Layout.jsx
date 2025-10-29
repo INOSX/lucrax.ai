@@ -18,14 +18,14 @@ const Layout = ({ children }) => {
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
       
+      {/* Header - Fixed outside main container */}
+      <Header 
+        onMenuToggle={toggleSidebar} 
+        isSidebarOpen={isSidebarOpen}
+      />
+      
       {/* Main content */}
       <div className="lg:pl-64 pt-16">
-        {/* Header */}
-        <Header 
-          onMenuToggle={toggleSidebar} 
-          isSidebarOpen={isSidebarOpen}
-        />
-        
         {/* Page content */}
         <main className="p-6 max-w-7xl mx-auto">
           {children}
