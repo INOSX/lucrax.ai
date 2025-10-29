@@ -19,8 +19,21 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Verificar se a chave API está configurada
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('OPENAI_API_KEY não configurada')
+    return res.status(500).json({ error: 'OpenAI API key not configured' })
+  }
+
+  // Verificar se o cliente OpenAI está inicializado
+  if (!openai) {
+    console.error('Cliente OpenAI não inicializado')
+    return res.status(500).json({ error: 'OpenAI client not initialized' })
+  }
+
   try {
     const { action, ...params } = req.body
+    console.log('API OpenAI - Action:', action, 'Params keys:', Object.keys(params))
 
     switch (action) {
       case 'createVectorstore':
@@ -45,13 +58,21 @@ export default async function handler(req, res) {
         return res.status(200).json({ assistantId: assistant.id })
 
       case 'uploadFile':
-        // Processar arquivo base64 em um File compatível com o SDK
-        // toFile garante o nome e o content-type corretos
-        const { toFile } = await import('openai/uploads')
-        const fileBuffer = Buffer.from(params.file?.data || '', 'base64')
-        const uploadFile = await toFile(fileBuffer, params.file?.name || 'upload.csv', {
-          type: params.file?.type || 'text/csv'
+        console.log('UploadFile - Params:', { 
+          vectorstoreId: params.vectorstoreId, 
+          dataLength: params.data?.length, 
+          fileName: params.fileName, 
+          fileType: params.fileType 
         })
+        
+        // Processar arquivo base64 em um File compatível com o SDK
+        const { toFile } = await import('openai/uploads')
+        const fileBuffer = Buffer.from(params.data || '', 'base64')
+        const uploadFile = await toFile(fileBuffer, params.fileName || 'upload.csv', {
+          type: params.fileType || 'text/csv'
+        })
+
+        console.log('UploadFile - File created:', uploadFile.name, uploadFile.type)
 
         // Fazer upload para OpenAI (purpose: assistants)
         const file = await openai.files.create({
@@ -59,11 +80,15 @@ export default async function handler(req, res) {
           purpose: 'assistants',
         })
         
+        console.log('UploadFile - File uploaded to OpenAI:', file.id)
+        
         // Associar ao vectorstore
         await openai.beta.vectorStores.files.create(
           params.vectorstoreId,
           { file_id: file.id }
         )
+        
+        console.log('UploadFile - File associated with vectorstore:', params.vectorstoreId)
         
         return res.status(200).json({ fileId: file.id })
 

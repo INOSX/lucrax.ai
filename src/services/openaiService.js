@@ -91,11 +91,9 @@ export class OpenAIService {
       
       const result = await this.callAPI('uploadFile', {
         vectorstoreId: vectorstoreId,
-        file: {
-          name: file.name,
-          type: file.type,
-          data: base64
-        }
+        data: base64,
+        fileName: file.name,
+        fileType: file.type
       })
 
       return { success: true, fileId: result.fileId }
