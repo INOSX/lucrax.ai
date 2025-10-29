@@ -1,10 +1,16 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 export default async function handler(req, res) {
+  // Inicializar cliente OpenAI dentro da função
+  let openai
+  try {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  } catch (error) {
+    console.error('Erro ao inicializar cliente OpenAI:', error)
+    return res.status(500).json({ error: 'Erro ao inicializar cliente OpenAI' })
+  }
   // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -31,9 +37,18 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'OpenAI client not initialized' })
   }
 
+  // Verificar se a propriedade files existe
+  if (!openai.files) {
+    console.error('Propriedade files não encontrada no cliente OpenAI')
+    return res.status(500).json({ error: 'OpenAI client missing files property' })
+  }
+
   try {
     const { action, ...params } = req.body
     console.log('API OpenAI - Action:', action, 'Params keys:', Object.keys(params))
+    console.log('API OpenAI - OpenAI client type:', typeof openai)
+    console.log('API OpenAI - OpenAI files type:', typeof openai.files)
+    console.log('API OpenAI - OpenAI files.create type:', typeof openai.files?.create)
 
     switch (action) {
       case 'createVectorstore':
