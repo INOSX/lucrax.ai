@@ -41,13 +41,8 @@ const ClientTest = () => {
           const assistantCheck = await OpenAIService.checkAssistantExists(clientData.openai_assistant_id)
           assistantExists = assistantCheck.exists
           if (!assistantExists) {
-            console.log('Assistente não existe na OpenAI, limpando ID')
-            // Limpar ID órfão
-            await supabase
-              .from('clients')
-              .update({ openai_assistant_id: null })
-              .eq('id', clientData.id)
-            clientData.openai_assistant_id = null
+            console.log('Assistente não confirmado na OpenAI (mantendo ID no banco).')
+            // Não limpar o ID automaticamente; apenas sinalizar em UI
           }
         }
         
@@ -55,13 +50,8 @@ const ClientTest = () => {
           const vectorstoreCheck = await OpenAIService.checkVectorstoreExists(clientData.vectorstore_id)
           vectorstoreExists = vectorstoreCheck.exists
           if (!vectorstoreExists) {
-            console.log('Vectorstore não existe na OpenAI, limpando ID')
-            // Limpar ID órfão
-            await supabase
-              .from('clients')
-              .update({ vectorstore_id: null })
-              .eq('id', clientData.id)
-            clientData.vectorstore_id = null
+            console.log('Vectorstore não confirmado na OpenAI (mantendo ID no banco).')
+            // Não limpar o ID automaticamente; apenas sinalizar em UI
           }
         }
         
