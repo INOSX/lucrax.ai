@@ -112,19 +112,15 @@ export default async function handler(req, res) {
           fileType: params.fileType 
         })
         
-        // Processar arquivo base64 em um File compatível com o SDK
-        const { toFile } = await import('openai/uploads')
+        // Processar arquivo base64 diretamente como Buffer
         const fileBuffer = Buffer.from(params.data || '', 'base64')
-        const uploadFile = await toFile(fileBuffer, params.fileName || 'upload.csv', {
-          type: params.fileType || 'text/csv'
-        })
+        console.log('UploadFile - File buffer created, length:', fileBuffer.length)
 
-        console.log('UploadFile - File created:', uploadFile.name, uploadFile.type)
-
-        // Fazer upload para OpenAI (purpose: assistants)
+        // Fazer upload para OpenAI usando Buffer diretamente
         const file = await openai.files.create({
-          file: uploadFile,
+          file: fileBuffer,
           purpose: 'assistants',
+          filename: params.fileName || 'upload.csv'
         })
         
         console.log('UploadFile - File uploaded to OpenAI:', file.id)
