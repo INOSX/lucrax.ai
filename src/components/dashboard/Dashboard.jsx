@@ -5,6 +5,7 @@ import ChartContainer from './ChartContainer'
 import ClientTest from './ClientTest'
 import AuthTest from './AuthTest'
 import SimpleTest from './SimpleTest'
+import DebugTest from './DebugTest'
 import { 
   TrendingUp, 
   Users, 
@@ -22,6 +23,7 @@ const Dashboard = () => {
   const [showClientTest, setShowClientTest] = useState(false)
   const [showAuthTest, setShowAuthTest] = useState(false)
   const [showSimpleTest, setShowSimpleTest] = useState(false)
+  const [showDebugTest, setShowDebugTest] = useState(false)
   const [datasets, setDatasets] = useState([])
   const [selectedDataset, setSelectedDataset] = useState(null)
   const [chartType, setChartType] = useState('line')
@@ -118,6 +120,13 @@ const Dashboard = () => {
           >
             <Database className="h-4 w-4" />
             <span>Teste Simples</span>
+          </button>
+          <button 
+            onClick={() => setShowDebugTest(true)}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <Database className="h-4 w-4" />
+            <span>Debug</span>
           </button>
           <button className="btn-primary flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
@@ -331,6 +340,26 @@ const Dashboard = () => {
                 </button>
               </div>
               <SimpleTest />
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Debug Test Modal */}
+      {showDebugTest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+            <Card className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Debug Completo</h2>
+                <button
+                  onClick={() => setShowDebugTest(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              <DebugTest />
             </Card>
           </div>
         </div>
