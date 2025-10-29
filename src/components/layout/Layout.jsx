@@ -19,7 +19,7 @@ const Layout = ({ children }) => {
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
       
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 pt-16">
         {/* Header */}
         <Header 
           onMenuToggle={toggleSidebar} 
