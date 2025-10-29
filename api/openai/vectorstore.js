@@ -90,17 +90,18 @@ export default async function handler(req, res) {
         return res.status(200).json({ vectorstoreId: vectorstore.id })
 
       case 'createAssistant':
+        console.log('Criando assistente...', { name: params.name })
+        
+        // Criar assistente sem vectorstore inicialmente
         const assistant = await openai.beta.assistants.create({
           name: params.name,
           instructions: params.instructions,
           model: "gpt-4o-mini",
-          tools: [{ type: "file_search" }],
-          tool_resources: {
-            file_search: {
-              vector_store_ids: [params.vectorstoreId]
-            }
-          }
+          tools: [{ type: "file_search" }]
+          // Não incluir tool_resources inicialmente
         })
+        
+        console.log('Assistente criado:', assistant.id)
         return res.status(200).json({ assistantId: assistant.id })
 
       case 'uploadFile':
@@ -139,7 +140,28 @@ export default async function handler(req, res) {
         return res.status(200).json({ fileId: file.id })
 
       case 'deleteVectorstore':
-        await openai.beta.vectorStores.del(params.vectorstoreId)
+        console.log('Deletando vectorstore...', params.vectorstoreId)
+        
+        try {
+          await openai.beta.vectorStores.del(params.vectorstoreId)
+          console.log('Vectorstore deletado via SDK')
+        } catch (error) {
+          console.error('Erro ao deletar vectorstore via SDK:', error)
+          // Fallback: usar API REST diretamente
+          const response = await fetch(`https://api.openai.com/v1/vector_stores/${params.vectorstoreId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error(`API REST falhou: ${response.status} ${response.statusText}`)
+          }
+          
+          console.log('Vectorstore deletado via API REST')
+        }
+        
         return res.status(200).json({ success: true })
 
       case 'deleteAssistant':
