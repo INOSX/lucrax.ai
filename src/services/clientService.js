@@ -156,6 +156,53 @@ export class ClientService {
   }
 
   /**
+   * Provisiona vectorstore e assistente para um cliente existente que ainda não possui recursos
+   * @param {Object} client - Registro do cliente (deve conter id, client_code)
+   * @returns {Promise<{success: boolean, client?: Object, error?: string}>}
+   */
+  static async provisionResourcesForClient(client) {
+    try {
+      if (!client?.id || !client?.client_code) {
+        return { success: false, error: 'Cliente inválido' }
+      }
+
+      // Criar vectorstore se ausente
+      let vectorstoreId = client.vectorstore_id
+      if (!vectorstoreId) {
+        const vs = await OpenAIService.createVectorstore(client.client_code)
+        if (vs.error) return { success: false, error: vs.error }
+        vectorstoreId = vs.vectorstoreId
+      }
+
+      // Criar assistente se ausente e vincular ao vectorstore
+      let assistantId = client.openai_assistant_id
+      if (!assistantId) {
+        const asst = await OpenAIService.createAssistant(client.client_code, vectorstoreId)
+        if (asst.error) {
+          // rollback do vectorstore recém-criado
+          if (!client.vectorstore_id && vectorstoreId) await OpenAIService.deleteVectorstore(vectorstoreId)
+          return { success: false, error: asst.error }
+        }
+        assistantId = asst.assistantId
+      }
+
+      // Atualizar cliente
+      const update = {}
+      if (!client.vectorstore_id) update.vectorstore_id = vectorstoreId
+      if (!client.openai_assistant_id) update.openai_assistant_id = assistantId
+
+      if (Object.keys(update).length > 0) {
+        return await this.updateClient(client.id, update)
+      }
+
+      return { success: true, client }
+    } catch (error) {
+      console.error('Erro ao provisionar recursos do cliente:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  /**
    * Deleta cliente e seus recursos OpenAI
    * @param {string} clientId - ID do cliente
    * @returns {Promise<{success: boolean, error?: string}>}

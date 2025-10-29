@@ -40,6 +40,22 @@ const ClientTest = () => {
     }
   }
 
+  const provisionResources = async () => {
+    if (!client) return
+    setTestResults(prev => ({ ...prev, provision: 'testing' }))
+    try {
+      const result = await ClientService.provisionResourcesForClient(client)
+      if (result.success) {
+        setClient(result.client)
+        setTestResults(prev => ({ ...prev, provision: 'success' }))
+      } else {
+        setTestResults(prev => ({ ...prev, provision: 'error', provisionError: result.error }))
+      }
+    } catch (err) {
+      setTestResults(prev => ({ ...prev, provision: 'error', provisionError: err.message }))
+    }
+  }
+
   const testVectorstore = async () => {
     if (!client?.vectorstore_id) return
 
@@ -229,6 +245,19 @@ const ClientTest = () => {
         </h3>
         
         <div className="space-y-4">
+          {(!client.vectorstore_id || !client.openai_assistant_id) && (
+            <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="text-sm text-yellow-800">
+                Recursos ausentes: { !client.vectorstore_id ? 'Vectorstore ' : ''}{ !client.openai_assistant_id ? 'Assistente' : '' }
+                {testResults.provisionError && (
+                  <p className="text-xs text-red-600 mt-1">{testResults.provisionError}</p>
+                )}
+              </div>
+              <Button size="sm" onClick={provisionResources} disabled={testResults.provision === 'testing'}>
+                Provisionar Recursos
+              </Button>
+            </div>
+          )}
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
               {getStatusIcon(testResults.vectorstore)}

@@ -45,12 +45,17 @@ export default async function handler(req, res) {
         return res.status(200).json({ assistantId: assistant.id })
 
       case 'uploadFile':
-        // Processar arquivo base64
-        const fileBuffer = Buffer.from(params.file.data, 'base64')
-        
-        // Fazer upload para OpenAI
+        // Processar arquivo base64 em um File compatível com o SDK
+        // toFile garante o nome e o content-type corretos
+        const { toFile } = await import('openai/uploads')
+        const fileBuffer = Buffer.from(params.file?.data || '', 'base64')
+        const uploadFile = await toFile(fileBuffer, params.file?.name || 'upload.csv', {
+          type: params.file?.type || 'text/csv'
+        })
+
+        // Fazer upload para OpenAI (purpose: assistants)
         const file = await openai.files.create({
-          file: fileBuffer,
+          file: uploadFile,
           purpose: 'assistants',
         })
         
