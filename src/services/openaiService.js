@@ -1,15 +1,36 @@
-import OpenAI from 'openai'
-import { config } from '../config/env.js'
-
-// Inicializar cliente OpenAI
-const openai = new OpenAI({
-  apiKey: config.openai.apiKey,
-})
-
 /**
  * Serviço para gerenciar vectorstores e assistentes da OpenAI
+ * Usa API intermediária para manter a chave API segura no servidor
  */
 export class OpenAIService {
+  /**
+   * Chama a API intermediária do Vercel
+   * @param {string} action - Ação a ser executada
+   * @param {Object} params - Parâmetros para a ação
+   * @returns {Promise<Object>} - Resultado da operação
+   */
+  static async callAPI(action, params = {}) {
+    try {
+      const response = await fetch('/api/openai/vectorstore', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, ...params })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro na API')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error(`Erro na chamada da API (${action}):`, error)
+      throw error
+    }
+  }
+
   /**
    * Cria um novo vectorstore para um cliente
    * @param {string} clientCode - Código do cliente
@@ -19,12 +40,12 @@ export class OpenAIService {
     try {
       const vectorstoreName = `${clientCode}-vs`
       
-      const vectorstore = await openai.beta.vectorstores.create({
+      const result = await this.callAPI('createVectorstore', {
         name: vectorstoreName,
         description: `Vectorstore para dados do cliente ${clientCode}`,
       })
 
-      return { vectorstoreId: vectorstore.id }
+      return { vectorstoreId: result.vectorstoreId }
     } catch (error) {
       console.error('Erro ao criar vectorstore:', error)
       return { error: error.message }
@@ -41,23 +62,15 @@ export class OpenAIService {
     try {
       const assistantName = `${clientCode}-assistant`
       
-      const assistant = await openai.beta.assistants.create({
+      const result = await this.callAPI('createAssistant', {
         name: assistantName,
         instructions: `Você é um assistente especializado em análise de dados para o cliente ${clientCode}. 
         Use os dados do vectorstore para responder perguntas e gerar insights sobre os dados do cliente.
         Sempre forneça análises precisas e acionáveis baseadas nos dados disponíveis.`,
-        model: "gpt-4o-mini",
-        tools: [
-          { type: "file_search" }
-        ],
-        tool_resources: {
-          file_search: {
-            vector_store_ids: [vectorstoreId]
-          }
-        }
+        vectorstoreId: vectorstoreId
       })
 
-      return { assistantId: assistant.id }
+      return { assistantId: result.assistantId }
     } catch (error) {
       console.error('Erro ao criar assistente:', error)
       return { error: error.message }
@@ -72,32 +85,12 @@ export class OpenAIService {
    */
   static async uploadFileToVectorstore(vectorstoreId, file) {
     try {
-      // Primeiro, fazer upload do arquivo
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('purpose', 'assistants')
-
-      const uploadResponse = await fetch('https://api.openai.com/v1/files', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${config.openai.apiKey}`,
-        },
-        body: formData
+      const result = await this.callAPI('uploadFile', {
+        vectorstoreId: vectorstoreId,
+        file: file
       })
 
-      if (!uploadResponse.ok) {
-        throw new Error(`Erro no upload: ${uploadResponse.statusText}`)
-      }
-
-      const uploadResult = await uploadResponse.json()
-      const fileId = uploadResult.id
-
-      // Associar arquivo ao vectorstore
-      await openai.beta.vectorstores.files.create(vectorstoreId, {
-        file_id: fileId
-      })
-
-      return { fileId }
+      return { fileId: result.fileId }
     } catch (error) {
       console.error('Erro ao fazer upload para vectorstore:', error)
       return { error: error.message }
@@ -167,7 +160,7 @@ export class OpenAIService {
    */
   static async deleteVectorstore(vectorstoreId) {
     try {
-      await openai.beta.vectorstores.del(vectorstoreId)
+      await this.callAPI('deleteVectorstore', { vectorstoreId })
       return { success: true }
     } catch (error) {
       console.error('Erro ao deletar vectorstore:', error)
@@ -182,7 +175,7 @@ export class OpenAIService {
    */
   static async deleteAssistant(assistantId) {
     try {
-      await openai.beta.assistants.del(assistantId)
+      await this.callAPI('deleteAssistant', { assistantId })
       return { success: true }
     } catch (error) {
       console.error('Erro ao deletar assistente:', error)
