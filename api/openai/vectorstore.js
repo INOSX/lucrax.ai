@@ -1,14 +1,27 @@
-import OpenAI from 'openai'
+import OpenAI from 'openaiClient'
+
+// Inicializar cliente OpenAI fora da função para reutilização
+let openaiClient
+
+function initializeOpenAI() {
+  if (!openaiClient) {
+    try {
+      openaiClient = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      })
+      console.log('Cliente OpenAI inicializado com sucesso')
+    } catch (error) {
+      console.error('Erro ao inicializar cliente OpenAI:', error)
+      return null
+    }
+  }
+  return openaiClient
+}
 
 export default async function handler(req, res) {
-  // Inicializar cliente OpenAI dentro da função
-  let openai
-  try {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  } catch (error) {
-    console.error('Erro ao inicializar cliente OpenAI:', error)
+  // Inicializar ou obter cliente OpenAI
+  const openaiClientClient = initializeOpenAI()
+  if (!openaiClientClient) {
     return res.status(500).json({ error: 'Erro ao inicializar cliente OpenAI' })
   }
   // Configurar CORS
@@ -31,14 +44,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'OpenAI API key not configured' })
   }
 
-  // Verificar se o cliente OpenAI está inicializado
-  if (!openai) {
-    console.error('Cliente OpenAI não inicializado')
-    return res.status(500).json({ error: 'OpenAI client not initialized' })
-  }
-
   // Verificar se a propriedade files existe
-  if (!openai.files) {
+  if (!openaiClientClient.files) {
     console.error('Propriedade files não encontrada no cliente OpenAI')
     return res.status(500).json({ error: 'OpenAI client missing files property' })
   }
@@ -46,30 +53,30 @@ export default async function handler(req, res) {
   try {
     const { action, ...params } = req.body
     console.log('API OpenAI - Action:', action, 'Params keys:', Object.keys(params))
-    console.log('API OpenAI - OpenAI client type:', typeof openai)
-    console.log('API OpenAI - OpenAI files type:', typeof openai.files)
-    console.log('API OpenAI - OpenAI files.create type:', typeof openai.files?.create)
+    console.log('API OpenAI - OpenAI client type:', typeof openaiClientClient)
+    console.log('API OpenAI - OpenAI files type:', typeof openaiClientClient.files)
+    console.log('API OpenAI - OpenAI files.create type:', typeof openaiClientClient.files?.create)
 
     switch (action) {
       case 'createVectorstore':
         console.log('Criando vectorstore...', { name: params.name, assistantId: params.assistantId })
         
         // Verificar se o cliente OpenAI está funcionando
-        console.log('OpenAI client:', !!openai)
-        console.log('OpenAI beta:', !!openai.beta)
-        console.log('OpenAI beta vectorStores:', !!openai.beta?.vectorStores)
+        console.log('OpenAI client:', !!openaiClient)
+        console.log('OpenAI beta:', !!openaiClient.beta)
+        console.log('OpenAI beta vectorStores:', !!openaiClient.beta?.vectorStores)
         
         // Criar vectorstore usando a API correta
         let vectorstore
         try {
-          vectorstore = await openai.beta.vectorStores.create({
+          vectorstore = await openaiClient.beta.vectorStores.create({
             name: params.name,
             description: params.description,
           })
         } catch (error) {
           console.error('Erro ao criar vectorstore via SDK:', error)
           // Fallback: usar API REST diretamente
-          const response = await fetch('https://api.openai.com/v1/vector_stores', {
+          const response = await fetch('https://api.openaiClient.com/v1/vector_stores', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -96,7 +103,7 @@ export default async function handler(req, res) {
         console.log('Criando assistente...', { name: params.name })
         
         // Criar assistente sem vectorstore inicialmente
-        const assistant = await openai.beta.assistants.create({
+        const assistant = await openaiClient.beta.assistants.create({
           name: params.name,
           instructions: params.instructions,
           model: "gpt-4o-mini",
@@ -113,7 +120,7 @@ export default async function handler(req, res) {
           vectorstoreId: params.vectorstoreId 
         })
         
-        await openai.beta.assistants.update(params.assistantId, {
+        await openaiClient.beta.assistants.update(params.assistantId, {
           tool_resources: {
             file_search: { vector_store_ids: [params.vectorstoreId] }
           },
@@ -143,7 +150,7 @@ export default async function handler(req, res) {
         console.log('UploadFile - File object created:', fileToUpload.name, fileToUpload.type, fileToUpload.size)
 
         // Fazer upload para OpenAI usando o objeto File
-        const file = await openai.files.create({
+        const file = await openaiClient.files.create({
           file: fileToUpload,
           purpose: 'assistants'
         })
@@ -151,7 +158,7 @@ export default async function handler(req, res) {
         console.log('UploadFile - File uploaded to OpenAI:', file.id)
         
         // Associar ao vectorstore
-        await openai.beta.vectorStores.files.create(
+        await openaiClient.beta.vectorStores.files.create(
           params.vectorstoreId,
           { file_id: file.id }
         )
@@ -164,12 +171,12 @@ export default async function handler(req, res) {
         console.log('Deletando vectorstore...', params.vectorstoreId)
         
         try {
-          await openai.beta.vectorStores.del(params.vectorstoreId)
+          await openaiClient.beta.vectorStores.del(params.vectorstoreId)
           console.log('Vectorstore deletado via SDK')
         } catch (error) {
           console.error('Erro ao deletar vectorstore via SDK:', error)
           // Fallback: usar API REST diretamente
-          const response = await fetch(`https://api.openai.com/v1/vector_stores/${params.vectorstoreId}`, {
+          const response = await fetch(`https://api.openaiClient.com/v1/vector_stores/${params.vectorstoreId}`, {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -186,13 +193,13 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true })
 
       case 'deleteAssistant':
-        await openai.beta.assistants.del(params.assistantId)
+        await openaiClient.beta.assistants.del(params.assistantId)
         return res.status(200).json({ success: true })
 
       case 'checkAssistantExists':
         console.log('Verificando se assistente existe...', params.assistantId)
         try {
-          const assistant = await openai.beta.assistants.retrieve(params.assistantId)
+          const assistant = await openaiClient.beta.assistants.retrieve(params.assistantId)
           console.log('Assistente encontrado:', assistant.id)
           return res.status(200).json({ exists: true, assistant })
         } catch (error) {
@@ -206,7 +213,7 @@ export default async function handler(req, res) {
       case 'checkVectorstoreExists':
         console.log('Verificando se vectorstore existe...', params.vectorstoreId)
         try {
-          const vectorstore = await openai.beta.vectorStores.retrieve(params.vectorstoreId)
+          const vectorstore = await openaiClient.beta.vectorStores.retrieve(params.vectorstoreId)
           console.log('Vectorstore encontrado:', vectorstore.id)
           return res.status(200).json({ exists: true, vectorstore })
         } catch (error) {
