@@ -39,22 +39,35 @@ export class ClientService {
   }
 
   /**
-   * Gera um nome único para assistente ou vectorstore
+   * Gera um hash único para um cliente (mesmo hash para assistente e vectorstore)
    * @param {string} clientCode - Código do cliente
-   * @param {string} type - Tipo: 'assistant' ou 'vectorstore'
-   * @returns {Promise<string>} Nome único
+   * @returns {Promise<string>} Hash único para o cliente
    */
-  static async generateUniqueName(clientCode, type) {
+  static async generateClientHash(clientCode) {
     const timestamp = Date.now().toString()
-    const input = `${clientCode}-${type}-${timestamp}`
+    const input = `${clientCode}-${timestamp}`
     
     try {
       const hash = await this.generateHash(input)
-      return `${clientCode}-${type}-${hash}`
+      return hash
     } catch (error) {
       // Fallback: usar timestamp e random se hash falhar
       const random = Math.random().toString(36).substring(2, 6)
-      return `${clientCode}-${type}-${timestamp.substring(-4)}-${random}`
+      return `${timestamp.substring(-4)}-${random}`
+    }
+  }
+
+  /**
+   * Gera nomes únicos para assistente e vectorstore do mesmo cliente
+   * @param {string} clientCode - Código do cliente
+   * @returns {Promise<{assistantName: string, vectorstoreName: string}>} Nomes únicos
+   */
+  static async generateUniqueNames(clientCode) {
+    const hash = await this.generateClientHash(clientCode)
+    
+    return {
+      assistantName: `${clientCode}-assistant-${hash}`,
+      vectorstoreName: `${clientCode}-vectorstore-${hash}`
     }
   }
 
@@ -73,9 +86,8 @@ export class ClientService {
       // Gerar código único do cliente
       const clientCode = this.generateClientCode()
       
-      // Gerar nomes únicos
-      const assistantName = await this.generateUniqueName(clientCode, 'assistant')
-      const vectorstoreName = await this.generateUniqueName(clientCode, 'vectorstore')
+      // Gerar nomes únicos (mesmo hash para ambos)
+      const { assistantName, vectorstoreName } = await this.generateUniqueNames(clientCode)
 
       // 1) Criar assistente primeiro
       const assistantResult = await OpenAIService.createAssistant(clientCode, assistantName)
@@ -222,11 +234,12 @@ export class ClientService {
         return { success: false, error: 'Cliente inválido' }
       }
 
-      // Gerar nomes únicos se necessário
+      // Gerar nomes únicos se necessário (mesmo hash para ambos)
       let assistantName, vectorstoreName
       if (!client.openai_assistant_id || !client.vectorstore_id) {
-        assistantName = await this.generateUniqueName(client.client_code, 'assistant')
-        vectorstoreName = await this.generateUniqueName(client.client_code, 'vectorstore')
+        const names = await this.generateUniqueNames(client.client_code)
+        assistantName = names.assistantName
+        vectorstoreName = names.vectorstoreName
       }
 
       // 1) Criar assistente se ausente
