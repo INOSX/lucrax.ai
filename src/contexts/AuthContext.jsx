@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, auth } from '../services/supabase'
+import { ClientService } from '../services/clientService'
 
 const AuthContext = createContext({})
 
@@ -76,6 +77,25 @@ export const AuthProvider = ({ children }) => {
       if (error) {
         setError(error.message)
         return { success: false, error: error.message }
+      }
+
+      // Se o usuário foi criado com sucesso, criar cliente automaticamente
+      if (data.user) {
+        try {
+          const clientResult = await ClientService.createClient({
+            name: userData.full_name || email.split('@')[0],
+            email: email,
+            userId: data.user.id
+          })
+
+          if (!clientResult.success) {
+            console.warn('Usuário criado, mas falha ao criar cliente:', clientResult.error)
+            // Não falhar o registro por causa do cliente, apenas logar o erro
+          }
+        } catch (clientError) {
+          console.warn('Erro ao criar cliente após registro:', clientError)
+          // Não falhar o registro por causa do cliente
+        }
       }
       
       return { success: true, data }

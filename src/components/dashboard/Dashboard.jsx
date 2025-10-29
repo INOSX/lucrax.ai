@@ -2,17 +2,21 @@ import React, { useState } from 'react'
 import Card from '../ui/Card'
 import FileUpload from './FileUpload'
 import ChartContainer from './ChartContainer'
+import ClientTest from './ClientTest'
 import { 
   TrendingUp, 
   Users, 
   DollarSign, 
   Activity,
   Upload,
-  BarChart3
+  BarChart3,
+  Database,
+  X
 } from 'lucide-react'
 
 const Dashboard = () => {
   const [showFileUpload, setShowFileUpload] = useState(false)
+  const [showClientTest, setShowClientTest] = useState(false)
   const [datasets, setDatasets] = useState([])
   const [selectedDataset, setSelectedDataset] = useState(null)
   const [chartType, setChartType] = useState('line')
@@ -88,6 +92,13 @@ const Dashboard = () => {
           >
             <Upload className="h-4 w-4" />
             <span>Upload de Dados</span>
+          </button>
+          <button 
+            onClick={() => setShowClientTest(true)}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <Database className="h-4 w-4" />
+            <span>Teste Cliente</span>
           </button>
           <button className="btn-primary flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
@@ -244,6 +255,26 @@ const Dashboard = () => {
           onDataLoaded={handleDataLoaded}
           onClose={() => setShowFileUpload(false)}
         />
+      )}
+
+      {/* Client Test Modal */}
+      {showClientTest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <Card className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Teste de Integração do Cliente</h2>
+                <button
+                  onClick={() => setShowClientTest(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              <ClientTest />
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   )
