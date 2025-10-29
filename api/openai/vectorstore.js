@@ -37,20 +37,54 @@ export default async function handler(req, res) {
 
     switch (action) {
       case 'createVectorstore':
-        // Criar vectorstore (SDK usa beta.vectorStores)
-        const vectorstore = await openai.beta.vectorStores.create({
-          name: params.name,
-          description: params.description,
-        })
+        console.log('Criando vectorstore...', { name: params.name, assistantId: params.assistantId })
+        
+        // Verificar se o cliente OpenAI está funcionando
+        console.log('OpenAI client:', !!openai)
+        console.log('OpenAI beta:', !!openai.beta)
+        console.log('OpenAI beta vectorStores:', !!openai.beta?.vectorStores)
+        
+        // Criar vectorstore usando a API correta
+        let vectorstore
+        try {
+          vectorstore = await openai.beta.vectorStores.create({
+            name: params.name,
+            description: params.description,
+          })
+        } catch (error) {
+          console.error('Erro ao criar vectorstore via SDK:', error)
+          // Fallback: usar API REST diretamente
+          const response = await fetch('https://api.openai.com/v1/vector_stores', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: params.name,
+              description: params.description,
+            })
+          })
+          
+          if (!response.ok) {
+            throw new Error(`API REST falhou: ${response.status} ${response.statusText}`)
+          }
+          
+          vectorstore = await response.json()
+        }
+        
+        console.log('Vectorstore criado:', vectorstore.id)
 
         // Opcional: vincular ao assistente, se fornecido
         if (params.assistantId) {
+          console.log('Vinculando vectorstore ao assistente...', params.assistantId)
           await openai.beta.assistants.update(params.assistantId, {
             tool_resources: {
               file_search: { vector_store_ids: [vectorstore.id] }
             },
             tools: [{ type: 'file_search' }]
           })
+          console.log('Vectorstore vinculado ao assistente')
         }
 
         return res.status(200).json({ vectorstoreId: vectorstore.id })
