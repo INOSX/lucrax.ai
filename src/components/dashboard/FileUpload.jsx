@@ -91,7 +91,7 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
         throw new Error('Vectorstore não configurado para este cliente.')
       }
 
-      // Salvar metadados no Supabase (apenas informações sobre o arquivo)
+      // Salvar metadados no Supabase
       const { supabase } = await import('../../services/supabase')
       
       const { data: savedDataSource, error: dataSourceError } = await supabase
@@ -112,6 +112,25 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
       if (dataSourceError) {
         throw new Error(`Erro ao salvar metadados: ${dataSourceError.message}`)
       }
+
+      // Fazer upload de uma cópia em CSV para o Supabase Storage (para leitura/visualização)
+      const csvHeaders = parsedData.columns
+      const csvRows = [csvHeaders.join(',')]
+      parsedData.data.forEach(row => {
+        const values = csvHeaders.map(h => {
+          const v = row[h]
+          if (v === null || v === undefined) return ''
+          const s = String(v)
+          return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s
+        })
+        csvRows.push(values.join(','))
+      })
+      const csvBlob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+      const storagePath = `${client.id}/${fileName.replace(/\.[^/.]+$/, '.csv')}`
+      await supabase.storage.from('datasets').upload(storagePath, csvBlob, { upsert: true, contentType: 'text/csv' })
+
+      // Atualizar a linha com storage_path
+      await supabase.from('data_sources_new').update({ storage_path: storagePath }).eq('id', savedDataSource.id)
 
       // Fazer upload dos dados para o vectorstore do cliente
       const uploadResult = await OpenAIService.uploadDataToVectorstore(

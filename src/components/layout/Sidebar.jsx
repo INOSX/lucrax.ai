@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { ClientService } from '../../services/clientService'
 import { OpenAIService } from '../../services/openaiService'
+import { supabase } from '../../services/supabase'
 import { parseCSVString, detectColumnTypes, generateDataStats, cleanData, parseExcelFromArrayBuffer, base64ToUint8Array } from '../../services/dataParser'
 import { 
   BarChart3, 
@@ -168,14 +169,33 @@ const Sidebar = ({ isOpen, onClose }) => {
                     try {
                       const meta = vectorFiles.find(v => v.id === fileId)
                       const fileName = meta?.name?.toLowerCase() || ''
-                      const res = await OpenAIService.getFileContent(fileId)
+                      let res
+                      try {
+                        res = await OpenAIService.getFileContent(fileId)
+                      } catch (err) {
+                        // Se o download do OpenAI não é permitido, tentar Supabase Storage
+                        if (err?.message?.includes('Not allowed to download files of purpose')) {
+                          res = null
+                        } else {
+                          throw err
+                        }
+                      }
 
                       let parsed
-                      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                      if (res && (fileName.endsWith('.xlsx') || fileName.endsWith('.xls'))) {
                         const bytes = base64ToUint8Array(res.base64)
                         parsed = parseExcelFromArrayBuffer(bytes.buffer)
-                      } else {
+                      } else if (res) {
                         const text = res.content || (res.base64 ? new TextDecoder().decode(base64ToUint8Array(res.base64)) : '')
+                        parsed = await parseCSVString(text)
+                      } else {
+                        // Fallback: tentar baixar do Supabase Storage (datasets/<client>/<file>.csv)
+                        const clientResult = await ClientService.getClientByUserId(user.id)
+                        if (!clientResult.success) throw new Error('Cliente não encontrado')
+                        const path = `${clientResult.client.id}/${(meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')}`
+                        const { data: fileObj, error } = await supabase.storage.from('datasets').download(path)
+                        if (error) throw new Error('Não foi possível baixar o arquivo do armazenamento')
+                        const text = await fileObj.text()
                         parsed = await parseCSVString(text)
                       }
                       const cleaned = cleanData(parsed.data)
