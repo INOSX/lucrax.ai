@@ -12,6 +12,7 @@ import {
   Upload,
   BarChart3,
   Database,
+  User,
   X
 } from 'lucide-react'
 
