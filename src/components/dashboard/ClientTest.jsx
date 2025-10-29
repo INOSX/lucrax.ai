@@ -77,7 +77,11 @@ const ClientTest = () => {
   }
 
   const testVectorstore = async () => {
-    if (!client?.vectorstore_id) return
+    console.log('Testando vectorstore...', { client: client?.vectorstore_id })
+    if (!client?.vectorstore_id) {
+      console.log('Vectorstore ID não encontrado')
+      return
+    }
 
     setTestResults(prev => ({ ...prev, vectorstore: 'testing' }))
 
@@ -89,18 +93,21 @@ const ClientTest = () => {
         { nome: 'Pedro', idade: 35, cidade: 'Belo Horizonte' }
       ]
 
+      console.log('Fazendo upload de dados de teste...')
       const result = await OpenAIService.uploadDataToVectorstore(
         client.vectorstore_id,
         testData,
         'teste-vectorstore.csv'
       )
 
+      console.log('Resultado do upload:', result)
       setTestResults(prev => ({ 
         ...prev, 
         vectorstore: result.success ? 'success' : 'error',
         vectorstoreError: result.error
       }))
     } catch (err) {
+      console.error('Erro no teste do vectorstore:', err)
       setTestResults(prev => ({ 
         ...prev, 
         vectorstore: 'error',
@@ -110,18 +117,24 @@ const ClientTest = () => {
   }
 
   const testAssistant = async () => {
-    if (!client?.openai_assistant_id) return
+    console.log('Testando assistente...', { client: client?.openai_assistant_id })
+    if (!client?.openai_assistant_id) {
+      console.log('Assistente ID não encontrado')
+      return
+    }
 
     setTestResults(prev => ({ ...prev, assistant: 'testing' }))
 
     try {
       // Teste simples: verificar se o assistente existe
       // (Em uma implementação real, você faria uma chamada para verificar o assistente)
+      console.log('Assistente testado com sucesso (simulado)')
       setTestResults(prev => ({ 
         ...prev, 
         assistant: 'success'
       }))
     } catch (err) {
+      console.error('Erro no teste do assistente:', err)
       setTestResults(prev => ({ 
         ...prev, 
         assistant: 'error',
@@ -265,10 +278,13 @@ const ClientTest = () => {
         </h3>
         
         <div className="space-y-4">
-          {(testResults.vectorstore === 'error' || testResults.assistant === 'error') && (
+          {(!client.vectorstore_id || !client.openai_assistant_id || testResults.vectorstore === 'error' || testResults.assistant === 'error') && (
             <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <div className="text-sm text-yellow-800">
-                Recursos com problemas: Os IDs existem mas os recursos podem não ter sido criados na OpenAI.
+                {(!client.vectorstore_id || !client.openai_assistant_id) 
+                  ? 'Recursos ausentes: Vectorstore e/ou Assistente não configurados.'
+                  : 'Recursos com problemas: Os IDs existem mas os recursos podem não ter sido criados na OpenAI.'
+                }
                 {testResults.provisionError && (
                   <p className="text-xs text-red-600 mt-1">{testResults.provisionError}</p>
                 )}
