@@ -180,16 +180,36 @@ const Sidebar = ({ isOpen, onClose }) => {
                       const baseCsv = (meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')
 
                       // Apenas Supabase Storage (sem tentar OpenAI)
-                      let { data: fileObj, error } = await supabase.storage.from('datasets').download(`${folder}/${baseCsv}`)
-                      if (error) {
-                        const { data: entries } = await supabase.storage.from('datasets').list(folder)
-                        const ci = (s) => (s || '').toLowerCase()
-                        const match = (entries || []).find(e => ci(e.name) === ci(baseCsv))
-                        if (!match) throw new Error('Não foi possível baixar o arquivo do armazenamento')
-                        const dl = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
-                        if (dl.error) throw new Error('Não foi possível baixar o arquivo do armazenamento')
-                        fileObj = dl.data
+                      console.log(`Tentando baixar: ${folder}/${baseCsv}`)
+                      
+                      // Primeiro, listar o que existe na pasta
+                      const { data: entries, error: listError } = await supabase.storage.from('datasets').list(folder)
+                      console.log('Arquivos disponíveis na pasta:', entries)
+                      
+                      if (listError) {
+                        throw new Error(`Erro ao listar pasta: ${listError.message}`)
                       }
+                      
+                      if (!entries || entries.length === 0) {
+                        throw new Error('Nenhum arquivo encontrado na pasta do cliente. Faça upload de um arquivo primeiro.')
+                      }
+                      
+                      // Procurar por arquivo CSV que corresponda ao nome
+                      const ci = (s) => (s || '').toLowerCase()
+                      const match = entries.find(e => ci(e.name) === ci(baseCsv))
+                      
+                      if (!match) {
+                        console.log('Arquivo exato não encontrado. Arquivos disponíveis:', entries.map(e => e.name))
+                        throw new Error(`Arquivo ${baseCsv} não encontrado. Arquivos disponíveis: ${entries.map(e => e.name).join(', ')}`)
+                      }
+                      
+                      console.log(`Baixando arquivo: ${folder}/${match.name}`)
+                      const { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
+                      
+                      if (downloadError) {
+                        throw new Error(`Erro ao baixar arquivo: ${downloadError.message}`)
+                      }
+                      
                       const text = await fileObj.text()
                       const parsed = await parseCSVString(text)
                       const cleaned = cleanData(parsed.data)
