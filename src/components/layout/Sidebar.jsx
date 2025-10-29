@@ -35,8 +35,21 @@ const Sidebar = ({ isOpen, onClose }) => {
         const vs = cr.client.vectorstore_id
         if (!vs) throw new Error('Vectorstore não configurado')
         const list = await OpenAIService.listVectorstoreFiles(vs)
+
+        // Buscar metadados no Supabase para obter storage_path por filename
+        const { data: dsMeta } = await supabase
+          .from('data_sources_new')
+          .select('filename, storage_path, client_id')
+          .eq('client_id', cr.client.id)
+
+        const filenameToPath = new Map((dsMeta || []).map(row => [row.filename, row.storage_path]))
+
         if (!mounted) return
-        setVectorFiles((list.data || []).map(f => ({ id: f.file_id || f.id, name: f.filename || f.id })))
+        setVectorFiles((list.data || []).map(f => ({
+          id: f.file_id || f.id,
+          name: f.filename || f.id,
+          storagePath: filenameToPath.get(f.filename || '') || null
+        })))
       } catch (e) {
         if (!mounted) return
         setError(e.message)
@@ -190,9 +203,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         parsed = await parseCSVString(text)
                       } else {
                         // Fallback: tentar baixar do Supabase Storage (datasets/<client>/<file>.csv)
-                        const clientResult = await ClientService.getClientByUserId(user.id)
-                        if (!clientResult.success) throw new Error('Cliente não encontrado')
-                        const path = `${clientResult.client.id}/${(meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')}`
+                        const path = meta?.storagePath || `${(await ClientService.getClientByUserId(user.id)).client.id}/${(meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')}`
                         const { data: fileObj, error } = await supabase.storage.from('datasets').download(path)
                         if (error) throw new Error('Não foi possível baixar o arquivo do armazenamento')
                         const text = await fileObj.text()
