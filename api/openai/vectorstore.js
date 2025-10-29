@@ -1,4 +1,4 @@
-import OpenAI from 'openaiClient'
+import OpenAI from 'openai'
 
 // Inicializar cliente OpenAI fora da função para reutilização
 let openaiClient
@@ -20,8 +20,8 @@ function initializeOpenAI() {
 
 export default async function handler(req, res) {
   // Inicializar ou obter cliente OpenAI
-  const openaiClientClient = initializeOpenAI()
-  if (!openaiClientClient) {
+  const openaiClient = initializeOpenAI()
+  if (!openaiClient) {
     return res.status(500).json({ error: 'Erro ao inicializar cliente OpenAI' })
   }
   // Configurar CORS
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   }
 
   // Verificar se a propriedade files existe
-  if (!openaiClientClient.files) {
+  if (!openaiClient.files) {
     console.error('Propriedade files não encontrada no cliente OpenAI')
     return res.status(500).json({ error: 'OpenAI client missing files property' })
   }
@@ -53,9 +53,12 @@ export default async function handler(req, res) {
   try {
     const { action, ...params } = req.body
     console.log('API OpenAI - Action:', action, 'Params keys:', Object.keys(params))
-    console.log('API OpenAI - OpenAI client type:', typeof openaiClientClient)
-    console.log('API OpenAI - OpenAI files type:', typeof openaiClientClient.files)
-    console.log('API OpenAI - OpenAI files.create type:', typeof openaiClientClient.files?.create)
+    console.log('API OpenAI - OpenAI client type:', typeof openaiClient)
+    console.log('API OpenAI - OpenAI beta type:', typeof openaiClient.beta)
+    console.log('API OpenAI - OpenAI files type:', typeof openaiClient.files)
+    console.log('API OpenAI - OpenAI files.create type:', typeof openaiClient.files?.create)
+    console.log('API OpenAI - OpenAI beta.assistants type:', typeof openaiClient.beta?.assistants)
+    console.log('API OpenAI - OpenAI beta.vectorStores type:', typeof openaiClient.beta?.vectorStores)
 
     switch (action) {
       case 'createVectorstore':
@@ -76,7 +79,7 @@ export default async function handler(req, res) {
         } catch (error) {
           console.error('Erro ao criar vectorstore via SDK:', error)
           // Fallback: usar API REST diretamente
-          const response = await fetch('https://api.openaiClient.com/v1/vector_stores', {
+          const response = await fetch('https://api.openai.com/v1/vector_stores', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
