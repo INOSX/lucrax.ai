@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
   Menu, 
@@ -13,6 +14,7 @@ import Button from '../ui/Button'
 
 const Header = ({ onMenuToggle, isSidebarOpen }) => {
   const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const handleSignOut = async () => {
@@ -25,7 +27,7 @@ const Header = ({ onMenuToggle, isSidebarOpen }) => {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <header className="bg-white border-b border-gray-200 px-4 h-16 flex items-center justify-between flex-shrink-0">
       {/* Left side */}
       <div className="flex items-center space-x-4">
         <button
@@ -84,7 +86,9 @@ const Header = ({ onMenuToggle, isSidebarOpen }) => {
                 <User className="h-4 w-4" />
                 <span>Perfil</span>
               </button>
-              <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
+              <button 
+                onClick={() => { setShowUserMenu(false); navigate('/settings') }}
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2">
                 <Settings className="h-4 w-4" />
                 <span>Configurações</span>
               </button>

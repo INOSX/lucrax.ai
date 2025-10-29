@@ -5,6 +5,8 @@ import RegisterForm from './components/auth/RegisterForm'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Layout from './components/layout/Layout'
 import Dashboard from './components/dashboard/Dashboard'
+import Settings from './components/settings/Settings'
+import Datasets from './components/datasets/Datasets'
 
 function App() {
   return (
@@ -18,6 +20,20 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/datasets" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Datasets />
                 </Layout>
               </ProtectedRoute>
             } />

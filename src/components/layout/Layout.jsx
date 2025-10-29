@@ -14,12 +14,12 @@ const Layout = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
       
-      {/* Main content */}
-      <div className="lg:pl-64">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col">
         {/* Header */}
         <Header 
           onMenuToggle={toggleSidebar} 
@@ -27,7 +27,7 @@ const Layout = ({ children }) => {
         />
         
         {/* Page content */}
-        <main className="p-6">
+        <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
           {children}
         </main>
       </div>

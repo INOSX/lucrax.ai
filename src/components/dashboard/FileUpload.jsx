@@ -2,8 +2,9 @@ import React, { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, File, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { parseFile, validateData, cleanData, detectColumnTypes, generateDataStats } from '../../services/dataParser'
-import { data } from '../../services/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { ClientService } from '../../services/clientService'
+import { OpenAIService } from '../../services/openaiService'
 import Card from '../ui/Card'
 import Button from '../ui/Button'
 
@@ -77,41 +78,63 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
 
     setIsUploading(true)
     try {
-      // Salvar data source
-      const dataSource = {
-        user_id: user.id,
-        name: fileName,
-        file_name: fileName,
-        file_type: fileName.endsWith('.csv') ? 'csv' : 'xlsx',
-        metadata: {
-          columnTypes: parsedData.columnTypes,
-          stats: dataStats
-        }
+      // Buscar cliente do usuário
+      const clientResult = await ClientService.getClientByUserId(user.id)
+      
+      if (!clientResult.success) {
+        throw new Error('Cliente não encontrado. Por favor, faça logout e login novamente.')
       }
 
-      const { data: savedDataSource, error: dataSourceError } = await data.saveDataSource(dataSource)
+      const client = clientResult.client
+
+      if (!client.vectorstore_id) {
+        throw new Error('Vectorstore não configurado para este cliente.')
+      }
+
+      // Salvar metadados no Supabase (apenas informações sobre o arquivo)
+      const { supabase } = await import('../../services/supabase')
       
+      const { data: savedDataSource, error: dataSourceError } = await supabase
+        .from('data_sources_new')
+        .insert({
+          client_id: client.id,
+          filename: fileName,
+          file_type: fileName.endsWith('.csv') ? 'csv' : 'xlsx',
+          row_count: parsedData.rowCount,
+          column_count: parsedData.columns.length,
+          column_names: parsedData.columns,
+          column_types: Object.values(parsedData.columnTypes),
+          file_size: parsedData.fileSize || 0
+        })
+        .select()
+        .single()
+
       if (dataSourceError) {
-        throw new Error(`Erro ao salvar fonte de dados: ${dataSourceError.message}`)
+        throw new Error(`Erro ao salvar metadados: ${dataSourceError.message}`)
       }
 
-      // Salvar dataset
-      const dataset = {
-        user_id: user.id,
-        data_source_id: savedDataSource.id,
+      // Fazer upload dos dados para o vectorstore do cliente
+      const uploadResult = await OpenAIService.uploadDataToVectorstore(
+        client.vectorstore_id,
+        parsedData.data,
+        fileName
+      )
+
+      if (!uploadResult.success) {
+        throw new Error(`Erro ao fazer upload para vectorstore: ${uploadResult.error}`)
+      }
+
+      // Notificar componente pai com os dados processados
+      onDataLoaded({
+        id: savedDataSource.id,
+        filename: fileName,
+        rowCount: parsedData.rowCount,
+        columnCount: parsedData.columns.length,
         columns: parsedData.columns,
-        row_count: parsedData.rowCount,
-        data: parsedData.data
-      }
-
-      const { data: savedDataset, error: datasetError } = await data.saveDataset(dataset)
-      
-      if (datasetError) {
-        throw new Error(`Erro ao salvar dataset: ${datasetError.message}`)
-      }
-
-      // Notificar componente pai
-      onDataLoaded(savedDataset)
+        columnTypes: parsedData.columnTypes,
+        stats: dataStats,
+        data: parsedData.data.slice(0, 100) // Apenas preview dos dados
+      })
       
       // Fechar modal
       onClose()

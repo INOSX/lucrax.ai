@@ -1,10 +1,13 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 const LoginForm = () => {
   const { signIn, loading, error, clearError } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from?.pathname || '/'
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -28,9 +31,12 @@ const LoginForm = () => {
 
     const result = await signIn(formData.email, formData.password)
     
-    if (!result.success) {
-      setIsLoading(false)
+    if (result?.success) {
+      // Redireciona para a rota originalmente requisitada ou dashboard
+      navigate(from, { replace: true })
     }
+    // Em qualquer caso, encerra o loading
+    setIsLoading(false)
   }
 
   return (
