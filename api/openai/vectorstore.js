@@ -350,6 +350,28 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: error.message })
         }
 
+      case 'getFileContent':
+        try {
+          const { fileId } = params
+          if (!fileId) return res.status(400).json({ error: 'fileId é obrigatório' })
+          const resp = await fetch(`https://api.openai.com/v1/files/${fileId}/content`, {
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            }
+          })
+          if (!resp.ok) {
+            const txt = await resp.text()
+            throw new Error(`Falha ao obter conteúdo do arquivo: ${resp.status} ${resp.statusText} - ${txt}`)
+          }
+          // Conteúdo é um stream binário. Vamos converter para texto.
+          const buffer = await resp.arrayBuffer()
+          const text = Buffer.from(buffer).toString('utf-8')
+          return res.status(200).json({ content: text })
+        } catch (error) {
+          console.error('Erro ao obter conteúdo do arquivo:', error)
+          return res.status(500).json({ error: error.message })
+        }
+
       default:
         return res.status(400).json({ error: 'Invalid action' })
     }

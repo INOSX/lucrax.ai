@@ -1,4 +1,8 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { ClientService } from '../../services/clientService'
+import { OpenAIService } from '../../services/openaiService'
+import { parseCSVString, detectColumnTypes, generateDataStats, cleanData } from '../../services/dataParser'
 import { 
   BarChart3, 
   Upload, 
@@ -13,6 +17,35 @@ import {
 } from 'lucide-react'
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const { user } = useAuth()
+  const [vectorFiles, setVectorFiles] = useState([])
+  const [loadingFiles, setLoadingFiles] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let mounted = true
+    async function loadFiles() {
+      if (!user) return
+      setLoadingFiles(true)
+      setError(null)
+      try {
+        const cr = await ClientService.getClientByUserId(user.id)
+        if (!cr.success) throw new Error('Cliente não encontrado')
+        const vs = cr.client.vectorstore_id
+        if (!vs) throw new Error('Vectorstore não configurado')
+        const list = await OpenAIService.listVectorstoreFiles(vs)
+        if (!mounted) return
+        setVectorFiles((list.data || []).map(f => ({ id: f.file_id || f.id, name: f.filename || f.id })))
+      } catch (e) {
+        if (!mounted) return
+        setError(e.message)
+      } finally {
+        if (mounted) setLoadingFiles(false)
+      }
+    }
+    loadFiles()
+    return () => { mounted = false }
+  }, [user])
   const menuItems = [
     {
       icon: BarChart3,
@@ -30,6 +63,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       label: 'Meus Datasets',
       href: '/datasets'
     },
+    // Seção dinâmica virá aqui
     {
       icon: TrendingUp,
       label: 'Análises',
@@ -117,6 +151,51 @@ const Sidebar = ({ isOpen, onClose }) => {
                   </a>
                 )
               })}
+            </div>
+
+            {/* Selector de Arquivo do Vector Store */}
+            <div className="mt-6">
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Selecionar Arquivo (Vector Store)
+              </h3>
+              <div className="px-3">
+                <select
+                  className="w-full input text-sm"
+                  disabled={loadingFiles || !!error || vectorFiles.length === 0}
+                  onChange={async (e) => {
+                    const fileId = e.target.value
+                    if (!fileId) return
+                    try {
+                      const text = await OpenAIService.getFileContent(fileId)
+                      const parsed = await parseCSVString(text)
+                      const cleaned = cleanData(parsed.data)
+                      const columnTypes = detectColumnTypes(cleaned)
+                      const stats = generateDataStats(cleaned)
+                      const dataset = {
+                        id: fileId,
+                        name: parsed.filename || 'Arquivo do Vector Store',
+                        data: cleaned,
+                        columns: parsed.columns,
+                        row_count: parsed.rowCount,
+                        columnTypes,
+                        stats,
+                        created_at: Date.now()
+                      }
+                      window.dispatchEvent(new CustomEvent('dataset-selected', { detail: dataset }))
+                    } catch (err) {
+                      console.error('Falha ao carregar arquivo do vector store:', err)
+                    }
+                  }}
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    {loadingFiles ? 'Carregando...' : (error ? 'Erro ao carregar' : 'Escolha um arquivo')}
+                  </option>
+                  {vectorFiles.map(f => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Chart Types Section */}

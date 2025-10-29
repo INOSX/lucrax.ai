@@ -236,6 +236,20 @@ export class OpenAIService {
   }
 
   /**
+   * Retorna o conteúdo (texto) de um arquivo do OpenAI Files
+   * @param {string} fileId
+   */
+  static async getFileContent(fileId) {
+    try {
+      const result = await this.callAPI('getFileContent', { fileId })
+      return result.content
+    } catch (error) {
+      console.error('Erro ao obter conteúdo do arquivo:', error)
+      throw error
+    }
+  }
+
+  /**
    * Deleta um assistente
    * @param {string} assistantId - ID do assistente
    * @returns {Promise<{success: boolean, error?: string}>}

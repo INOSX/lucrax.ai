@@ -28,6 +28,32 @@ export const parseCSV = (file) => {
 }
 
 /**
+ * Parse conteúdo CSV a partir de string
+ */
+export const parseCSVString = (text) => {
+  return new Promise((resolve, reject) => {
+    Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0) {
+          reject(new Error(`Erro ao processar CSV: ${results.errors[0].message}`))
+        } else {
+          resolve({
+            data: results.data,
+            columns: results.meta.fields || [],
+            rowCount: results.data.length
+          })
+        }
+      },
+      error: (error) => {
+        reject(new Error(`Erro ao ler CSV: ${error.message}`))
+      }
+    })
+  })
+}
+
+/**
  * Parse um arquivo Excel usando XLSX
  */
 export const parseExcel = (file) => {

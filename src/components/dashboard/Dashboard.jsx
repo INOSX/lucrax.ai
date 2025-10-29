@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Card from '../ui/Card'
 import FileUpload from './FileUpload'
 import ChartContainer from './ChartContainer'
@@ -58,6 +58,20 @@ const Dashboard = () => {
       if (!yCandidate && newDataset.columns.length >= 2) setYColumn(newDataset.columns[1])
     }
   }
+
+  // Ouvir seleção de dataset vinda da Sidebar (vector store)
+  useEffect(() => {
+    const handler = (e) => {
+      const ds = e.detail
+      handleDataLoaded({
+        ...ds,
+        rowCount: ds.row_count,
+        columns: ds.columns
+      })
+    }
+    window.addEventListener('dataset-selected', handler)
+    return () => window.removeEventListener('dataset-selected', handler)
+  }, [])
 
   const handleChartTypeChange = (type) => {
     setChartType(type)
