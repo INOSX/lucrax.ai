@@ -44,10 +44,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'OpenAI API key not configured' })
   }
 
-  // Verificar se a propriedade files existe
+  // Aviso (não bloquear) se a propriedade files não existir no SDK
   if (!openaiClient.files) {
-    console.error('Propriedade files não encontrada no cliente OpenAI')
-    return res.status(500).json({ error: 'OpenAI client missing files property' })
+    console.warn('Aviso: propriedade files não encontrada no cliente OpenAI; usaremos REST como fallback quando necessário')
   }
 
   try {
@@ -58,7 +57,7 @@ export default async function handler(req, res) {
     console.log('API OpenAI - OpenAI files type:', typeof openaiClient.files)
     console.log('API OpenAI - OpenAI files.create type:', typeof openaiClient.files?.create)
     console.log('API OpenAI - OpenAI beta.assistants type:', typeof openaiClient.beta?.assistants)
-    console.log('API OpenAI - OpenAI beta.vectorStores type:', typeof openaiClient.beta?.vectorStores)
+    console.log('API OpenAI - OpenAI beta.vector_stores type:', typeof openaiClient.beta?.vector_stores)
 
     switch (action) {
       case 'createVectorstore':
@@ -67,12 +66,12 @@ export default async function handler(req, res) {
         // Verificar se o cliente OpenAI está funcionando
         console.log('OpenAI client:', !!openaiClient)
         console.log('OpenAI beta:', !!openaiClient.beta)
-        console.log('OpenAI beta vectorStores:', !!openaiClient.beta?.vectorStores)
+        console.log('OpenAI beta vector_stores:', !!openaiClient.beta?.vector_stores)
         
         // Criar vectorstore usando a API correta
         let vectorstore
         try {
-          vectorstore = await openaiClient.beta.vectorStores.create({
+          vectorstore = await openaiClient.beta.vector_stores.create({
             name: params.name,
             description: params.description,
           })
@@ -144,37 +143,82 @@ export default async function handler(req, res) {
         // Processar arquivo base64 diretamente como Buffer
         const fileBuffer = Buffer.from(params.data || '', 'base64')
         console.log('UploadFile - File buffer created, length:', fileBuffer.length)
+        
+        const filename = params.fileName || 'upload.csv'
+        const mimeType = params.fileType || 'text/csv'
 
-        // Criar um objeto File a partir do Buffer
-        const fileToUpload = new File([fileBuffer], params.fileName || 'upload.csv', {
-          type: params.fileType || 'text/csv'
-        })
+        // Tentar pelo SDK primeiro; se falhar, usar REST
+        let uploadedFileId
+        try {
+          if (!openaiClient?.files?.create) throw new Error('SDK files.create indisponível')
 
-        console.log('UploadFile - File object created:', fileToUpload.name, fileToUpload.type, fileToUpload.size)
+          // Criar Blob a partir do buffer (suportado no Node 18+)
+          const blob = new Blob([fileBuffer], { type: mimeType })
+          // O SDK aceita Blob diretamente
+          const file = await openaiClient.files.create({
+            file: blob,
+            purpose: 'assistants',
+            filename
+          })
+          uploadedFileId = file.id
+          console.log('UploadFile - File uploaded via SDK:', uploadedFileId)
+        } catch (sdkErr) {
+          console.warn('Upload via SDK falhou, tentando REST...', sdkErr?.message)
+          // REST: /v1/files com multipart form-data
+          const form = new FormData()
+          const blob = new Blob([fileBuffer], { type: mimeType })
+          form.append('file', blob, filename)
+          form.append('purpose', 'assistants')
 
-        // Fazer upload para OpenAI usando o objeto File
-        const file = await openaiClient.files.create({
-          file: fileToUpload,
-          purpose: 'assistants'
-        })
-        
-        console.log('UploadFile - File uploaded to OpenAI:', file.id)
-        
-        // Associar ao vectorstore
-        await openaiClient.beta.vectorStores.files.create(
-          params.vectorstoreId,
-          { file_id: file.id }
-        )
-        
-        console.log('UploadFile - File associated with vectorstore:', params.vectorstoreId)
-        
-        return res.status(200).json({ fileId: file.id })
+          const uploadResp = await fetch('https://api.openai.com/v1/files', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: form
+          })
+          if (!uploadResp.ok) {
+            const txt = await uploadResp.text()
+            throw new Error(`Falha no upload de arquivo (REST): ${uploadResp.status} ${uploadResp.statusText} - ${txt}`)
+          }
+          const uploadJson = await uploadResp.json()
+          uploadedFileId = uploadJson.id
+          console.log('UploadFile - File uploaded via REST:', uploadedFileId)
+        }
+
+        // Associar ao vector store (SDK se disponível; senão REST)
+        try {
+          if (!openaiClient?.beta?.vector_stores?.files?.create) throw new Error('SDK vector_stores.files.create indisponível')
+          await openaiClient.beta.vector_stores.files.create(
+            params.vectorstoreId,
+            { file_id: uploadedFileId }
+          )
+          console.log('UploadFile - File associated to vectorstore via SDK:', params.vectorstoreId)
+        } catch (sdkAssocErr) {
+          console.warn('Associação via SDK falhou, tentando REST...', sdkAssocErr?.message)
+          const assocResp = await fetch(`https://api.openai.com/v1/vector_stores/${params.vectorstoreId}/files`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+              'OpenAI-Beta': 'assistants=v2'
+            },
+            body: JSON.stringify({ file_id: uploadedFileId })
+          })
+          if (!assocResp.ok) {
+            const txt = await assocResp.text()
+            throw new Error(`Falha ao associar arquivo ao vectorstore (REST): ${assocResp.status} ${assocResp.statusText} - ${txt}`)
+          }
+          console.log('UploadFile - File associated to vectorstore via REST:', params.vectorstoreId)
+        }
+
+        return res.status(200).json({ fileId: uploadedFileId })
 
       case 'deleteVectorstore':
         console.log('Deletando vectorstore...', params.vectorstoreId)
         
         try {
-          await openaiClient.beta.vectorStores.del(params.vectorstoreId)
+          await openaiClient.beta.vector_stores.del(params.vectorstoreId)
           console.log('Vectorstore deletado via SDK')
         } catch (error) {
           console.error('Erro ao deletar vectorstore via SDK:', error)
@@ -218,8 +262,8 @@ export default async function handler(req, res) {
         console.log('Verificando se vectorstore existe...', params.vectorstoreId)
         try {
           let vectorstore
-          if (openaiClient?.beta?.vectorStores?.retrieve) {
-            vectorstore = await openaiClient.beta.vectorStores.retrieve(params.vectorstoreId)
+          if (openaiClient?.beta?.vector_stores?.retrieve) {
+            vectorstore = await openaiClient.beta.vector_stores.retrieve(params.vectorstoreId)
           } else {
             // Fallback REST
             const response = await fetch(`https://api.openai.com/v1/vector_stores/${params.vectorstoreId}`, {
