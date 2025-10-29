@@ -37,10 +37,22 @@ export default async function handler(req, res) {
 
     switch (action) {
       case 'createVectorstore':
-        const vectorstore = await openai.beta.vectorstores.create({
+        // Criar vectorstore (SDK usa beta.vectorStores)
+        const vectorstore = await openai.beta.vectorStores.create({
           name: params.name,
           description: params.description,
         })
+
+        // Opcional: vincular ao assistente, se fornecido
+        if (params.assistantId) {
+          await openai.beta.assistants.update(params.assistantId, {
+            tool_resources: {
+              file_search: { vector_store_ids: [vectorstore.id] }
+            },
+            tools: [{ type: 'file_search' }]
+          })
+        }
+
         return res.status(200).json({ vectorstoreId: vectorstore.id })
 
       case 'createAssistant':
@@ -93,7 +105,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ fileId: file.id })
 
       case 'deleteVectorstore':
-        await openai.beta.vectorstores.del(params.vectorstoreId)
+        await openai.beta.vectorStores.del(params.vectorstoreId)
         return res.status(200).json({ success: true })
 
       case 'deleteAssistant':

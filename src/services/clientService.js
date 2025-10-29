@@ -30,18 +30,18 @@ export class ClientService {
       // Gerar código único do cliente
       const clientCode = this.generateClientCode()
       
-      // Criar vectorstore
-      const vectorstoreResult = await OpenAIService.createVectorstore(clientCode)
-      if (vectorstoreResult.error) {
-        return { success: false, error: `Erro ao criar vectorstore: ${vectorstoreResult.error}` }
+      // 1) Criar assistente primeiro
+      const assistantResult = await OpenAIService.createAssistant(clientCode)
+      if (assistantResult.error) {
+        return { success: false, error: `Erro ao criar assistente: ${assistantResult.error}` }
       }
 
-      // Criar assistente
-      const assistantResult = await OpenAIService.createAssistant(clientCode, vectorstoreResult.vectorstoreId)
-      if (assistantResult.error) {
-        // Se falhar ao criar assistente, deletar vectorstore
-        await OpenAIService.deleteVectorstore(vectorstoreResult.vectorstoreId)
-        return { success: false, error: `Erro ao criar assistente: ${assistantResult.error}` }
+      // 2) Criar vectorstore e vincular ao assistente
+      const vectorstoreResult = await OpenAIService.createVectorstore(clientCode, assistantResult.assistantId)
+      if (vectorstoreResult.error) {
+        // rollback do assistente se vectorstore falhar
+        await OpenAIService.deleteAssistant(assistantResult.assistantId)
+        return { success: false, error: `Erro ao criar vectorstore: ${vectorstoreResult.error}` }
       }
 
       // Salvar cliente no Supabase
@@ -60,8 +60,8 @@ export class ClientService {
 
       if (error) {
         // Se falhar ao salvar no Supabase, deletar recursos OpenAI
-        await OpenAIService.deleteAssistant(assistantResult.assistantId)
         await OpenAIService.deleteVectorstore(vectorstoreResult.vectorstoreId)
+        await OpenAIService.deleteAssistant(assistantResult.assistantId)
         return { success: false, error: `Erro ao salvar cliente: ${error.message}` }
       }
 

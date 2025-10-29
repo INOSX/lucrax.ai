@@ -36,13 +36,14 @@ export class OpenAIService {
    * @param {string} clientCode - Código do cliente
    * @returns {Promise<{vectorstoreId: string, error?: string}>}
    */
-  static async createVectorstore(clientCode) {
+  static async createVectorstore(clientCode, assistantId) {
     try {
       const vectorstoreName = `${clientCode}-vs`
       
       const result = await this.callAPI('createVectorstore', {
         name: vectorstoreName,
         description: `Vectorstore para dados do cliente ${clientCode}`,
+        assistantId
       })
 
       return { vectorstoreId: result.vectorstoreId }
@@ -58,7 +59,7 @@ export class OpenAIService {
    * @param {string} vectorstoreId - ID do vectorstore
    * @returns {Promise<{assistantId: string, error?: string}>}
    */
-  static async createAssistant(clientCode, vectorstoreId) {
+  static async createAssistant(clientCode) {
     try {
       const assistantName = `${clientCode}-assistant`
       
@@ -67,7 +68,6 @@ export class OpenAIService {
         instructions: `Você é um assistente especializado em análise de dados para o cliente ${clientCode}. 
         Use os dados do vectorstore para responder perguntas e gerar insights sobre os dados do cliente.
         Sempre forneça análises precisas e acionáveis baseadas nos dados disponíveis.`,
-        vectorstoreId: vectorstoreId
       })
 
       return { assistantId: result.assistantId }
