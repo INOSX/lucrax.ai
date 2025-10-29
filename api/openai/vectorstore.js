@@ -45,32 +45,22 @@ export default async function handler(req, res) {
         return res.status(200).json({ assistantId: assistant.id })
 
       case 'uploadFile':
-        // Primeiro, fazer upload do arquivo
-        const formData = new FormData()
-        formData.append('file', params.file)
-        formData.append('purpose', 'assistants')
-
-        const uploadResponse = await fetch('https://api.openai.com/v1/files', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: formData
+        // Processar arquivo base64
+        const fileBuffer = Buffer.from(params.file.data, 'base64')
+        
+        // Fazer upload para OpenAI
+        const file = await openai.files.create({
+          file: fileBuffer,
+          purpose: 'assistants',
         })
-
-        if (!uploadResponse.ok) {
-          throw new Error(`Erro no upload: ${uploadResponse.statusText}`)
-        }
-
-        const uploadResult = await uploadResponse.json()
-        const fileId = uploadResult.id
-
-        // Associar arquivo ao vectorstore
-        await openai.beta.vectorstores.files.create(params.vectorstoreId, {
-          file_id: fileId
-        })
-
-        return res.status(200).json({ fileId })
+        
+        // Associar ao vectorstore
+        await openai.beta.vectorStores.files.create(
+          params.vectorstoreId,
+          { file_id: file.id }
+        )
+        
+        return res.status(200).json({ fileId: file.id })
 
       case 'deleteVectorstore':
         await openai.beta.vectorstores.del(params.vectorstoreId)

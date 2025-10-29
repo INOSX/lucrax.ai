@@ -85,15 +85,23 @@ export class OpenAIService {
    */
   static async uploadFileToVectorstore(vectorstoreId, file) {
     try {
+      // Converter arquivo para base64 para envio via JSON
+      const arrayBuffer = await file.arrayBuffer()
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+      
       const result = await this.callAPI('uploadFile', {
         vectorstoreId: vectorstoreId,
-        file: file
+        file: {
+          name: file.name,
+          type: file.type,
+          data: base64
+        }
       })
 
-      return { fileId: result.fileId }
+      return { success: true, fileId: result.fileId }
     } catch (error) {
       console.error('Erro ao fazer upload para vectorstore:', error)
-      return { error: error.message }
+      return { success: false, error: error.message }
     }
   }
 
@@ -116,7 +124,7 @@ export class OpenAIService {
       // Fazer upload
       const result = await this.uploadFileToVectorstore(vectorstoreId, file)
       
-      if (result.error) {
+      if (!result.success) {
         return { success: false, error: result.error }
       }
 
