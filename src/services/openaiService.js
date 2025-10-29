@@ -191,6 +191,36 @@ export class OpenAIService {
   }
 
   /**
+   * Verifica se um assistente existe na OpenAI
+   * @param {string} assistantId - ID do assistente
+   * @returns {Promise<{exists: boolean, assistant?: Object, error?: string}>}
+   */
+  static async checkAssistantExists(assistantId) {
+    try {
+      const result = await this.callAPI('checkAssistantExists', { assistantId })
+      return { exists: result.exists, assistant: result.assistant }
+    } catch (error) {
+      console.error('Erro ao verificar assistente:', error)
+      return { exists: false, error: error.message }
+    }
+  }
+
+  /**
+   * Verifica se um vectorstore existe na OpenAI
+   * @param {string} vectorstoreId - ID do vectorstore
+   * @returns {Promise<{exists: boolean, vectorstore?: Object, error?: string}>}
+   */
+  static async checkVectorstoreExists(vectorstoreId) {
+    try {
+      const result = await this.callAPI('checkVectorstoreExists', { vectorstoreId })
+      return { exists: result.exists, vectorstore: result.vectorstore }
+    } catch (error) {
+      console.error('Erro ao verificar vectorstore:', error)
+      return { exists: false, error: error.message }
+    }
+  }
+
+  /**
    * Deleta um assistente
    * @param {string} assistantId - ID do assistente
    * @returns {Promise<{success: boolean, error?: string}>}

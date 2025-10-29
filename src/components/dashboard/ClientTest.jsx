@@ -4,7 +4,8 @@ import { ClientService } from '../../services/clientService'
 import { OpenAIService } from '../../services/openaiService'
 import Card from '../ui/Card'
 import Button from '../ui/Button'
-import { User, Database, Bot, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { User, Database, Bot, CheckCircle, AlertCircle, Loader2, Info } from 'lucide-react'
+import { supabase } from '../../services/supabase'
 
 const ClientTest = () => {
   const { user } = useAuth()
@@ -24,12 +25,47 @@ const ClientTest = () => {
 
     setLoading(true)
     setError(null)
+    setTestResults({}) // Reset test results on load
 
     try {
       const result = await ClientService.getClientByUserId(user.id)
       
       if (result.success) {
-        setClient(result.client)
+        const clientData = result.client
+        
+        // Verificar se os recursos realmente existem na OpenAI
+        let assistantExists = true
+        let vectorstoreExists = true
+        
+        if (clientData.openai_assistant_id) {
+          const assistantCheck = await OpenAIService.checkAssistantExists(clientData.openai_assistant_id)
+          assistantExists = assistantCheck.exists
+          if (!assistantExists) {
+            console.log('Assistente não existe na OpenAI, limpando ID')
+            // Limpar ID órfão
+            await supabase
+              .from('clients')
+              .update({ openai_assistant_id: null })
+              .eq('id', clientData.id)
+            clientData.openai_assistant_id = null
+          }
+        }
+        
+        if (clientData.vectorstore_id) {
+          const vectorstoreCheck = await OpenAIService.checkVectorstoreExists(clientData.vectorstore_id)
+          vectorstoreExists = vectorstoreCheck.exists
+          if (!vectorstoreExists) {
+            console.log('Vectorstore não existe na OpenAI, limpando ID')
+            // Limpar ID órfão
+            await supabase
+              .from('clients')
+              .update({ vectorstore_id: null })
+              .eq('id', clientData.id)
+            clientData.vectorstore_id = null
+          }
+        }
+        
+        setClient(clientData)
       } else {
         setError(result.error)
       }

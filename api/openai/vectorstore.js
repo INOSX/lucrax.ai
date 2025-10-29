@@ -189,6 +189,34 @@ export default async function handler(req, res) {
         await openai.beta.assistants.del(params.assistantId)
         return res.status(200).json({ success: true })
 
+      case 'checkAssistantExists':
+        console.log('Verificando se assistente existe...', params.assistantId)
+        try {
+          const assistant = await openai.beta.assistants.retrieve(params.assistantId)
+          console.log('Assistente encontrado:', assistant.id)
+          return res.status(200).json({ exists: true, assistant })
+        } catch (error) {
+          if (error.status === 404) {
+            console.log('Assistente não encontrado')
+            return res.status(200).json({ exists: false })
+          }
+          throw error
+        }
+
+      case 'checkVectorstoreExists':
+        console.log('Verificando se vectorstore existe...', params.vectorstoreId)
+        try {
+          const vectorstore = await openai.beta.vectorStores.retrieve(params.vectorstoreId)
+          console.log('Vectorstore encontrado:', vectorstore.id)
+          return res.status(200).json({ exists: true, vectorstore })
+        } catch (error) {
+          if (error.status === 404) {
+            console.log('Vectorstore não encontrado')
+            return res.status(200).json({ exists: false })
+          }
+          throw error
+        }
+
       default:
         return res.status(400).json({ error: 'Invalid action' })
     }
