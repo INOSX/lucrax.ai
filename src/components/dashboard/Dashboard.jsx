@@ -2,9 +2,6 @@ import React, { useState } from 'react'
 import Card from '../ui/Card'
 import FileUpload from './FileUpload'
 import ChartContainer from './ChartContainer'
-import ClientTest from './ClientTest'
-import AuthTest from './AuthTest'
-import SimpleTest from './SimpleTest'
 import DebugTest from './DebugTest'
 import { 
   TrendingUp, 
@@ -14,12 +11,10 @@ import {
   Upload,
   BarChart3,
   Database,
-  User,
   X
 } from 'lucide-react'
 
 const Dashboard = () => {
-  const [showFileUpload, setShowFileUpload] = useState(false)
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [showDebugTest, setShowDebugTest] = useState(false)
   const [datasets, setDatasets] = useState([])
