@@ -44,10 +44,30 @@ const ClientTest = () => {
     if (!client) return
     setTestResults(prev => ({ ...prev, provision: 'testing' }))
     try {
-      const result = await ClientService.provisionResourcesForClient(client)
+      // Primeiro, limpar os IDs existentes (que são placeholders)
+      const { supabase } = await import('../../services/supabase')
+      await supabase
+        .from('clients')
+        .update({ 
+          vectorstore_id: null, 
+          openai_assistant_id: null 
+        })
+        .eq('id', client.id)
+
+      // Agora provisionar recursos reais
+      const result = await ClientService.provisionResourcesForClient({
+        ...client,
+        vectorstore_id: null,
+        openai_assistant_id: null
+      })
+      
       if (result.success) {
         setClient(result.client)
         setTestResults(prev => ({ ...prev, provision: 'success' }))
+        // Recarregar os testes após provisionar
+        setTimeout(() => {
+          runAllTests()
+        }, 1000)
       } else {
         setTestResults(prev => ({ ...prev, provision: 'error', provisionError: result.error }))
       }
@@ -245,16 +265,16 @@ const ClientTest = () => {
         </h3>
         
         <div className="space-y-4">
-          {(!client.vectorstore_id || !client.openai_assistant_id) && (
+          {(testResults.vectorstore === 'error' || testResults.assistant === 'error') && (
             <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <div className="text-sm text-yellow-800">
-                Recursos ausentes: { !client.vectorstore_id ? 'Vectorstore ' : ''}{ !client.openai_assistant_id ? 'Assistente' : '' }
+                Recursos com problemas: Os IDs existem mas os recursos podem não ter sido criados na OpenAI.
                 {testResults.provisionError && (
                   <p className="text-xs text-red-600 mt-1">{testResults.provisionError}</p>
                 )}
               </div>
               <Button size="sm" onClick={provisionResources} disabled={testResults.provision === 'testing'}>
-                Provisionar Recursos
+                {testResults.provision === 'testing' ? 'Provisionando...' : 'Provisionar Recursos'}
               </Button>
             </div>
           )}
