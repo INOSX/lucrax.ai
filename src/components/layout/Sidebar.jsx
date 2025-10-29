@@ -36,13 +36,19 @@ const Sidebar = ({ isOpen, onClose }) => {
         if (!vs) throw new Error('Vectorstore não configurado')
         const list = await OpenAIService.listVectorstoreFiles(vs)
 
-        // Buscar metadados no Supabase para obter storage_path por filename
-        const { data: dsMeta } = await supabase
-          .from('data_sources_new')
-          .select('filename, storage_path, client_id')
-          .eq('client_id', cr.client.id)
-
-        const filenameToPath = new Map((dsMeta || []).map(row => [row.filename, row.storage_path]))
+        // Tentar buscar metadados no Supabase para obter storage_path por filename
+        let filenameToPath = new Map()
+        try {
+          const { data: dsMeta, error: dsErr } = await supabase
+            .from('data_sources_new')
+            .select('filename, storage_path, client_id')
+            .eq('client_id', cr.client.id)
+          if (dsErr) throw dsErr
+          filenameToPath = new Map((dsMeta || []).map(row => [row.filename, row.storage_path]))
+        } catch (metaErr) {
+          // Falhar silenciosamente: seguimos sem storage_path (vamos tentar heurística depois)
+          console.warn('Aviso: não foi possível obter metadados de storage_path. Prosseguindo sem mapeamento.', metaErr?.message)
+        }
 
         if (!mounted) return
         setVectorFiles((list.data || []).map(f => ({
