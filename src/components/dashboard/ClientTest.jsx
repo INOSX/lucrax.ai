@@ -105,8 +105,25 @@ const ClientTest = () => {
   const testVectorstore = async () => {
     console.log('Testando vectorstore...', { client: client?.vectorstore_id })
     if (!client?.vectorstore_id) {
-      console.log('Vectorstore ID não encontrado')
-      return
+      // Tentar recuperar via assistente (se estiver configurado)
+      if (client?.openai_assistant_id) {
+        try {
+          const check = await OpenAIService.checkAssistantExists(client.openai_assistant_id)
+          const vsId = check?.assistant?.tool_resources?.file_search?.vector_store_ids?.[0]
+          if (vsId) {
+            // Persistir no banco e no estado local
+            await supabase.from('clients').update({ vectorstore_id: vsId }).eq('id', client.id)
+            setClient(prev => ({ ...prev, vectorstore_id: vsId }))
+            console.log('Vectorstore ID recuperado do assistente e salvo:', vsId)
+          }
+        } catch (e) {
+          console.log('Não foi possível recuperar vectorstore pelo assistente:', e?.message)
+        }
+      }
+      if (!client?.vectorstore_id) {
+        console.log('Vectorstore ID não encontrado')
+        return
+      }
     }
 
     setTestResults(prev => ({ ...prev, vectorstore: 'testing' }))
