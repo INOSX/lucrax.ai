@@ -36,12 +36,21 @@ export class ClientService {
         return { success: false, error: `Erro ao criar assistente: ${assistantResult.error}` }
       }
 
-      // 2) Criar vectorstore e vincular ao assistente
-      const vectorstoreResult = await OpenAIService.createVectorstore(clientCode, assistantResult.assistantId)
+      // 2) Criar vectorstore (sem vincular ainda)
+      const vectorstoreResult = await OpenAIService.createVectorstore(clientCode)
       if (vectorstoreResult.error) {
         // rollback do assistente se vectorstore falhar
         await OpenAIService.deleteAssistant(assistantResult.assistantId)
         return { success: false, error: `Erro ao criar vectorstore: ${vectorstoreResult.error}` }
+      }
+
+      // 3) Vincular vectorstore ao assistente
+      const linkResult = await OpenAIService.linkVectorstoreToAssistant(assistantResult.assistantId, vectorstoreResult.vectorstoreId)
+      if (linkResult.error) {
+        // rollback: deletar vectorstore e assistente
+        await OpenAIService.deleteVectorstore(vectorstoreResult.vectorstoreId)
+        await OpenAIService.deleteAssistant(assistantResult.assistantId)
+        return { success: false, error: `Erro ao vincular vectorstore ao assistente: ${linkResult.error}` }
       }
 
       // Salvar cliente no Supabase
@@ -166,24 +175,33 @@ export class ClientService {
         return { success: false, error: 'Cliente inválido' }
       }
 
-      // Criar vectorstore se ausente
+      // 1) Criar assistente se ausente
+      let assistantId = client.openai_assistant_id
+      if (!assistantId) {
+        const asst = await OpenAIService.createAssistant(client.client_code)
+        if (asst.error) return { success: false, error: asst.error }
+        assistantId = asst.assistantId
+      }
+
+      // 2) Criar vectorstore se ausente
       let vectorstoreId = client.vectorstore_id
       if (!vectorstoreId) {
         const vs = await OpenAIService.createVectorstore(client.client_code)
-        if (vs.error) return { success: false, error: vs.error }
+        if (vs.error) {
+          // rollback do assistente recém-criado
+          if (!client.openai_assistant_id && assistantId) await OpenAIService.deleteAssistant(assistantId)
+          return { success: false, error: vs.error }
+        }
         vectorstoreId = vs.vectorstoreId
       }
 
-      // Criar assistente se ausente e vincular ao vectorstore
-      let assistantId = client.openai_assistant_id
-      if (!assistantId) {
-        const asst = await OpenAIService.createAssistant(client.client_code, vectorstoreId)
-        if (asst.error) {
-          // rollback do vectorstore recém-criado
-          if (!client.vectorstore_id && vectorstoreId) await OpenAIService.deleteVectorstore(vectorstoreId)
-          return { success: false, error: asst.error }
-        }
-        assistantId = asst.assistantId
+      // 3) Vincular vectorstore ao assistente
+      const linkResult = await OpenAIService.linkVectorstoreToAssistant(assistantId, vectorstoreId)
+      if (linkResult.error) {
+        // rollback: deletar recursos recém-criados
+        if (!client.openai_assistant_id && assistantId) await OpenAIService.deleteAssistant(assistantId)
+        if (!client.vectorstore_id && vectorstoreId) await OpenAIService.deleteVectorstore(vectorstoreId)
+        return { success: false, error: linkResult.error }
       }
 
       // Atualizar cliente

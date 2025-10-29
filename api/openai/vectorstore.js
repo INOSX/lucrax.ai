@@ -90,18 +90,6 @@ export default async function handler(req, res) {
         
         console.log('Vectorstore criado:', vectorstore.id)
 
-        // Opcional: vincular ao assistente, se fornecido
-        if (params.assistantId) {
-          console.log('Vinculando vectorstore ao assistente...', params.assistantId)
-          await openai.beta.assistants.update(params.assistantId, {
-            tool_resources: {
-              file_search: { vector_store_ids: [vectorstore.id] }
-            },
-            tools: [{ type: 'file_search' }]
-          })
-          console.log('Vectorstore vinculado ao assistente')
-        }
-
         return res.status(200).json({ vectorstoreId: vectorstore.id })
 
       case 'createAssistant':
@@ -118,6 +106,22 @@ export default async function handler(req, res) {
         
         console.log('Assistente criado:', assistant.id)
         return res.status(200).json({ assistantId: assistant.id })
+
+      case 'linkVectorstoreToAssistant':
+        console.log('Vinculando vectorstore ao assistente...', { 
+          assistantId: params.assistantId, 
+          vectorstoreId: params.vectorstoreId 
+        })
+        
+        await openai.beta.assistants.update(params.assistantId, {
+          tool_resources: {
+            file_search: { vector_store_ids: [params.vectorstoreId] }
+          },
+          tools: [{ type: 'file_search' }]
+        })
+        
+        console.log('Vectorstore vinculado ao assistente com sucesso')
+        return res.status(200).json({ success: true })
 
       case 'uploadFile':
         console.log('UploadFile - Params:', { 

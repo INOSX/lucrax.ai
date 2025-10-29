@@ -36,20 +36,39 @@ export class OpenAIService {
    * @param {string} clientCode - Código do cliente
    * @returns {Promise<{vectorstoreId: string, error?: string}>}
    */
-  static async createVectorstore(clientCode, assistantId) {
+  static async createVectorstore(clientCode) {
     try {
       const vectorstoreName = `${clientCode}-vs`
       
       const result = await this.callAPI('createVectorstore', {
         name: vectorstoreName,
-        description: `Vectorstore para dados do cliente ${clientCode}`,
-        assistantId
+        description: `Vectorstore para dados do cliente ${clientCode}`
       })
 
       return { vectorstoreId: result.vectorstoreId }
     } catch (error) {
       console.error('Erro ao criar vectorstore:', error)
       return { error: error.message }
+    }
+  }
+
+  /**
+   * Vincula um vectorstore a um assistente
+   * @param {string} assistantId - ID do assistente
+   * @param {string} vectorstoreId - ID do vectorstore
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  static async linkVectorstoreToAssistant(assistantId, vectorstoreId) {
+    try {
+      const result = await this.callAPI('linkVectorstoreToAssistant', {
+        assistantId,
+        vectorstoreId
+      })
+
+      return { success: true }
+    } catch (error) {
+      console.error('Erro ao vincular vectorstore ao assistente:', error)
+      return { success: false, error: error.message }
     }
   }
 
