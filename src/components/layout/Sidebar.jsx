@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { ClientService } from '../../services/clientService'
 import { OpenAIService } from '../../services/openaiService'
-import { parseCSVString, detectColumnTypes, generateDataStats, cleanData } from '../../services/dataParser'
+import { parseCSVString, detectColumnTypes, generateDataStats, cleanData, parseExcelFromArrayBuffer, base64ToUint8Array } from '../../services/dataParser'
 import { 
   BarChart3, 
   Upload, 
@@ -166,14 +166,24 @@ const Sidebar = ({ isOpen, onClose }) => {
                     const fileId = e.target.value
                     if (!fileId) return
                     try {
-                      const text = await OpenAIService.getFileContent(fileId)
-                      const parsed = await parseCSVString(text)
+                      const meta = vectorFiles.find(v => v.id === fileId)
+                      const fileName = meta?.name?.toLowerCase() || ''
+                      const res = await OpenAIService.getFileContent(fileId)
+
+                      let parsed
+                      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                        const bytes = base64ToUint8Array(res.base64)
+                        parsed = parseExcelFromArrayBuffer(bytes.buffer)
+                      } else {
+                        const text = res.content || (res.base64 ? new TextDecoder().decode(base64ToUint8Array(res.base64)) : '')
+                        parsed = await parseCSVString(text)
+                      }
                       const cleaned = cleanData(parsed.data)
                       const columnTypes = detectColumnTypes(cleaned)
                       const stats = generateDataStats(cleaned)
                       const dataset = {
                         id: fileId,
-                        name: parsed.filename || 'Arquivo do Vector Store',
+                        name: meta?.name || 'Arquivo do Vector Store',
                         data: cleaned,
                         columns: parsed.columns,
                         row_count: parsed.rowCount,

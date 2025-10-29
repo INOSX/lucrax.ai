@@ -363,10 +363,15 @@ export default async function handler(req, res) {
             const txt = await resp.text()
             throw new Error(`Falha ao obter conteúdo do arquivo: ${resp.status} ${resp.statusText} - ${txt}`)
           }
-          // Conteúdo é um stream binário. Vamos converter para texto.
+          // Conteúdo pode ser binário (xlsx) ou texto (csv)
           const buffer = await resp.arrayBuffer()
-          const text = Buffer.from(buffer).toString('utf-8')
-          return res.status(200).json({ content: text })
+          const contentType = resp.headers.get('content-type') || 'application/octet-stream'
+          const base64 = Buffer.from(buffer).toString('base64')
+          let text = null
+          if (contentType.includes('text') || contentType.includes('csv')) {
+            text = Buffer.from(buffer).toString('utf-8')
+          }
+          return res.status(200).json({ content: text, base64, contentType })
         } catch (error) {
           console.error('Erro ao obter conteúdo do arquivo:', error)
           return res.status(500).json({ error: error.message })

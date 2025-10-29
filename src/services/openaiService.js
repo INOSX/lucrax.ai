@@ -242,7 +242,7 @@ export class OpenAIService {
   static async getFileContent(fileId) {
     try {
       const result = await this.callAPI('getFileContent', { fileId })
-      return result.content
+      return result
     } catch (error) {
       console.error('Erro ao obter conteúdo do arquivo:', error)
       throw error
