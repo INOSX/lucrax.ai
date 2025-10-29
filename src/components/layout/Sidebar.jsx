@@ -36,25 +36,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         if (!vs) throw new Error('Vectorstore não configurado')
         const list = await OpenAIService.listVectorstoreFiles(vs)
 
-        // Tentar buscar metadados no Supabase para obter storage_path por filename
-        let filenameToPath = new Map()
-        try {
-          const { data: dsMeta, error: dsErr } = await supabase
-            .from('data_sources_new')
-            .select('filename, storage_path, client_id')
-            .eq('client_id', cr.client.id)
-          if (dsErr) throw dsErr
-          filenameToPath = new Map((dsMeta || []).map(row => [row.filename, row.storage_path]))
-        } catch (metaErr) {
-          // Falhar silenciosamente: seguimos sem storage_path (vamos tentar heurística depois)
-          console.warn('Aviso: não foi possível obter metadados de storage_path. Prosseguindo sem mapeamento.', metaErr?.message)
-        }
-
+        // Evitar chamadas 400: por ora não buscamos metadados adicionais
         if (!mounted) return
         setVectorFiles((list.data || []).map(f => ({
           id: f.file_id || f.id,
           name: f.filename || f.id,
-          storagePath: filenameToPath.get(f.filename || '') || null
+          storagePath: null
         })))
       } catch (e) {
         if (!mounted) return
@@ -208,10 +195,22 @@ const Sidebar = ({ isOpen, onClose }) => {
                         const text = res.content || (res.base64 ? new TextDecoder().decode(base64ToUint8Array(res.base64)) : '')
                         parsed = await parseCSVString(text)
                       } else {
-                        // Fallback: tentar baixar do Supabase Storage (datasets/<client>/<file>.csv)
-                        const path = meta?.storagePath || `${(await ClientService.getClientByUserId(user.id)).client.id}/${(meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')}`
-                        const { data: fileObj, error } = await supabase.storage.from('datasets').download(path)
-                        if (error) throw new Error('Não foi possível baixar o arquivo do armazenamento')
+                        // Fallback: tentar baixar do Supabase Storage buscando pelo nome dentro da pasta do cliente
+                        const clientResult = await ClientService.getClientByUserId(user.id)
+                        if (!clientResult.success) throw new Error('Cliente não encontrado')
+                        const folder = String(clientResult.client.id)
+                        const baseCsv = (meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')
+                        // Tentar caminho direto
+                        let { data: fileObj, error } = await supabase.storage.from('datasets').download(`${folder}/${baseCsv}`)
+                        if (error) {
+                          // Listar pasta e tentar localizar arquivo equivalente
+                          const { data: entries } = await supabase.storage.from('datasets').list(folder)
+                          const match = (entries || []).find(e => e.name.toLowerCase() === baseCsv.toLowerCase())
+                          if (!match) throw new Error('Não foi possível baixar o arquivo do armazenamento')
+                          const dl = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
+                          if (dl.error) throw new Error('Não foi possível baixar o arquivo do armazenamento')
+                          fileObj = dl.data
+                        }
                         const text = await fileObj.text()
                         parsed = await parseCSVString(text)
                       }
