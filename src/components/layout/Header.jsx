@@ -25,7 +25,7 @@ const Header = ({ onMenuToggle, isSidebarOpen }) => {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 h-16 flex items-center justify-between sticky top-0 z-40">
+    <header className="bg-white border-b border-gray-200 px-4 h-16 flex items-center justify-between flex-shrink-0">
       {/* Left side */}
       <div className="flex items-center space-x-4">
         <button
