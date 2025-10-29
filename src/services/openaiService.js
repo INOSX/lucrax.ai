@@ -221,6 +221,21 @@ export class OpenAIService {
   }
 
   /**
+   * Lista arquivos de um vectorstore
+   * @param {string} vectorstoreId
+   * @returns {Promise<{data: Array, has_more: boolean, last_id?: string}>}
+   */
+  static async listVectorstoreFiles(vectorstoreId) {
+    try {
+      const result = await this.callAPI('listFiles', { vectorstoreId })
+      return result
+    } catch (error) {
+      console.error('Erro ao listar arquivos do vectorstore:', error)
+      throw error
+    }
+  }
+
+  /**
    * Deleta um assistente
    * @param {string} assistantId - ID do assistente
    * @returns {Promise<{success: boolean, error?: string}>}

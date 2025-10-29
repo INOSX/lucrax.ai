@@ -290,6 +290,66 @@ export default async function handler(req, res) {
           throw error
         }
 
+      case 'listFiles':
+        // Lista arquivos de um vectorstore e enriquece com dados do arquivo
+        try {
+          const { vectorstoreId, limit = 100, after } = params
+          if (!vectorstoreId) {
+            return res.status(400).json({ error: 'vectorstoreId é obrigatório' })
+          }
+
+          // Buscar lista de arquivos do vector store
+          const url = new URL(`https://api.openai.com/v1/vector_stores/${vectorstoreId}/files`)
+          url.searchParams.set('limit', String(limit))
+          if (after) url.searchParams.set('after', after)
+
+          const filesResp = await fetch(url.toString(), {
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'OpenAI-Beta': 'assistants=v2'
+            }
+          })
+          if (!filesResp.ok) {
+            const txt = await filesResp.text()
+            throw new Error(`Falha ao listar arquivos do vector store: ${filesResp.status} ${filesResp.statusText} - ${txt}`)
+          }
+          const listJson = await filesResp.json()
+
+          // Enriquecer cada item com detalhes do arquivo (filename, bytes)
+          const items = listJson.data || []
+          const enriched = []
+          for (const item of items) {
+            try {
+              const f = await fetch(`https://api.openai.com/v1/files/${item.file_id || item.id}`, {
+                headers: {
+                  'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+                }
+              })
+              if (f.ok) {
+                const jf = await f.json()
+                enriched.push({
+                  id: item.id,
+                  file_id: item.file_id || item.id,
+                  status: item.status,
+                  created_at: item.created_at,
+                  last_error: item.last_error,
+                  filename: jf.filename,
+                  bytes: jf.bytes
+                })
+              } else {
+                enriched.push(item)
+              }
+            } catch {
+              enriched.push(item)
+            }
+          }
+
+          return res.status(200).json({ data: enriched, has_more: listJson.has_more, last_id: listJson.last_id })
+        } catch (error) {
+          console.error('Erro ao listar arquivos do vectorstore:', error)
+          return res.status(500).json({ error: error.message })
+        }
+
       default:
         return res.status(400).json({ error: 'Invalid action' })
     }
