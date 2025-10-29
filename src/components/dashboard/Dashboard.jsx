@@ -26,10 +26,36 @@ const Dashboard = () => {
   const handleDataLoaded = (newDataset) => {
     setDatasets(prev => [newDataset, ...prev])
     setSelectedDataset(newDataset)
-    // Auto-selecionar as primeiras duas colunas
-    if (newDataset.columns && newDataset.columns.length >= 2) {
-      setXColumn(newDataset.columns[0])
-      setYColumn(newDataset.columns[1])
+    // Heurística: eixo X categórico, eixo Y numérico
+    if (newDataset.columns && newDataset.columns.length >= 1) {
+      const columnTypes = newDataset.columnTypes || {}
+      const stats = newDataset.stats || {}
+      const columnStats = stats.columnStats || {}
+      const totalRows = stats.totalRows || (newDataset.data ? newDataset.data.length : 0)
+
+      const isNumeric = (col) => columnTypes[col] === 'number'
+      const isString = (col) => columnTypes[col] === 'string'
+
+      // Preferir coluna categórica com número de categorias razoável
+      const candidateCategoricals = (newDataset.columns || []).filter(col => isString(col))
+        .sort((a, b) => {
+          const ua = (columnStats[a]?.uniqueValues ?? Infinity)
+          const ub = (columnStats[b]?.uniqueValues ?? Infinity)
+          return ua - ub
+        })
+      const categoricalThreshold = Math.max(2, Math.min(20, Math.floor(totalRows / 2)))
+      const xCandidate = candidateCategoricals.find(col => {
+        const u = columnStats[col]?.uniqueValues
+        return typeof u === 'number' ? u <= categoricalThreshold : true
+      }) || candidateCategoricals[0]
+
+      const yCandidate = (newDataset.columns || []).find(col => isNumeric(col))
+
+      if (xCandidate) setXColumn(xCandidate)
+      if (yCandidate) setYColumn(yCandidate)
+      // Fallbacks
+      if (!xCandidate && newDataset.columns.length >= 1) setXColumn(newDataset.columns[0])
+      if (!yCandidate && newDataset.columns.length >= 2) setYColumn(newDataset.columns[1])
     }
   }
 
