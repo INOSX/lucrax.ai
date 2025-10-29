@@ -116,11 +116,17 @@ export default async function handler(req, res) {
         const fileBuffer = Buffer.from(params.data || '', 'base64')
         console.log('UploadFile - File buffer created, length:', fileBuffer.length)
 
-        // Fazer upload para OpenAI usando Buffer diretamente
+        // Criar um objeto File a partir do Buffer
+        const fileToUpload = new File([fileBuffer], params.fileName || 'upload.csv', {
+          type: params.fileType || 'text/csv'
+        })
+
+        console.log('UploadFile - File object created:', fileToUpload.name, fileToUpload.type, fileToUpload.size)
+
+        // Fazer upload para OpenAI usando o objeto File
         const file = await openai.files.create({
-          file: fileBuffer,
-          purpose: 'assistants',
-          filename: params.fileName || 'upload.csv'
+          file: fileToUpload,
+          purpose: 'assistants'
         })
         
         console.log('UploadFile - File uploaded to OpenAI:', file.id)
