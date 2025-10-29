@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Card from '../ui/Card'
 import FileUpload from './FileUpload'
 import ChartContainer from './ChartContainer'
@@ -36,6 +36,15 @@ const Dashboard = () => {
   const handleChartTypeChange = (type) => {
     setChartType(type)
   }
+  // Ler tipo de gráfico da URL (/?chart=bar)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const chart = params.get('chart')
+    if (chart && ['line','bar','pie','scatter','area'].includes(chart)) {
+      setChartType(chart)
+    }
+  }, [])
+
 
   const handleColumnChange = (axis, column) => {
     if (axis === 'x') {

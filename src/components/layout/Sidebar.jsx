@@ -128,13 +128,14 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {chartTypes.map((chart) => {
                   const Icon = chart.icon
                   return (
-                    <button
+                    <a
                       key={chart.type}
+                      href={`/?chart=${chart.type}`}
                       className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
                       <Icon className="h-4 w-4" />
                       <span>{chart.label}</span>
-                    </button>
+                    </a>
                   )
                 })}
               </div>
