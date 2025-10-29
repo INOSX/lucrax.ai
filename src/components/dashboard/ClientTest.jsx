@@ -281,8 +281,10 @@ const ClientTest = () => {
           {(!client.vectorstore_id || !client.openai_assistant_id || testResults.vectorstore === 'error' || testResults.assistant === 'error') && (
             <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <div className="text-sm text-yellow-800">
-                {(!client.vectorstore_id || !client.openai_assistant_id) 
-                  ? 'Recursos ausentes: Vectorstore e/ou Assistente não configurados.'
+                {(!client.vectorstore_id && !client.openai_assistant_id) 
+                  ? 'Nenhum recurso configurado: Clique em "Provisionar Recursos" para criar assistente e vectorstore na OpenAI.'
+                  : (!client.vectorstore_id || !client.openai_assistant_id)
+                  ? 'Recursos parciais: Alguns recursos estão ausentes. Clique em "Provisionar Recursos" para completar a configuração.'
                   : 'Recursos com problemas: Os IDs existem mas os recursos podem não ter sido criados na OpenAI.'
                 }
                 {testResults.provisionError && (
@@ -312,7 +314,7 @@ const ClientTest = () => {
             <Button
               size="sm"
               onClick={testVectorstore}
-              disabled={testResults.vectorstore === 'testing'}
+              disabled={testResults.vectorstore === 'testing' || !client.vectorstore_id}
             >
               Testar
             </Button>
@@ -336,7 +338,7 @@ const ClientTest = () => {
             <Button
               size="sm"
               onClick={testAssistant}
-              disabled={testResults.assistant === 'testing'}
+              disabled={testResults.assistant === 'testing' || !client.openai_assistant_id}
             >
               Testar
             </Button>
