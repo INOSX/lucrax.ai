@@ -174,46 +174,24 @@ const Sidebar = ({ isOpen, onClose }) => {
                     if (!fileId) return
                     try {
                       const meta = vectorFiles.find(v => v.id === fileId)
-                      const fileName = meta?.name?.toLowerCase() || ''
-                      let res
-                      try {
-                        res = await OpenAIService.getFileContent(fileId)
-                      } catch (err) {
-                        // Se o download do OpenAI não é permitido, tentar Supabase Storage
-                        if (err?.message?.includes('Not allowed to download files of purpose')) {
-                          res = null
-                        } else {
-                          throw err
-                        }
-                      }
+                      const clientResult = await ClientService.getClientByUserId(user.id)
+                      if (!clientResult.success) throw new Error('Cliente não encontrado')
+                      const folder = String(clientResult.client.id)
+                      const baseCsv = (meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')
 
-                      let parsed
-                      if (res && (fileName.endsWith('.xlsx') || fileName.endsWith('.xls'))) {
-                        const bytes = base64ToUint8Array(res.base64)
-                        parsed = parseExcelFromArrayBuffer(bytes.buffer)
-                      } else if (res) {
-                        const text = res.content || (res.base64 ? new TextDecoder().decode(base64ToUint8Array(res.base64)) : '')
-                        parsed = await parseCSVString(text)
-                      } else {
-                        // Fallback: tentar baixar do Supabase Storage buscando pelo nome dentro da pasta do cliente
-                        const clientResult = await ClientService.getClientByUserId(user.id)
-                        if (!clientResult.success) throw new Error('Cliente não encontrado')
-                        const folder = String(clientResult.client.id)
-                        const baseCsv = (meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')
-                        // Tentar caminho direto
-                        let { data: fileObj, error } = await supabase.storage.from('datasets').download(`${folder}/${baseCsv}`)
-                        if (error) {
-                          // Listar pasta e tentar localizar arquivo equivalente
-                          const { data: entries } = await supabase.storage.from('datasets').list(folder)
-                          const match = (entries || []).find(e => e.name.toLowerCase() === baseCsv.toLowerCase())
-                          if (!match) throw new Error('Não foi possível baixar o arquivo do armazenamento')
-                          const dl = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
-                          if (dl.error) throw new Error('Não foi possível baixar o arquivo do armazenamento')
-                          fileObj = dl.data
-                        }
-                        const text = await fileObj.text()
-                        parsed = await parseCSVString(text)
+                      // Apenas Supabase Storage (sem tentar OpenAI)
+                      let { data: fileObj, error } = await supabase.storage.from('datasets').download(`${folder}/${baseCsv}`)
+                      if (error) {
+                        const { data: entries } = await supabase.storage.from('datasets').list(folder)
+                        const ci = (s) => (s || '').toLowerCase()
+                        const match = (entries || []).find(e => ci(e.name) === ci(baseCsv))
+                        if (!match) throw new Error('Não foi possível baixar o arquivo do armazenamento')
+                        const dl = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
+                        if (dl.error) throw new Error('Não foi possível baixar o arquivo do armazenamento')
+                        fileObj = dl.data
                       }
+                      const text = await fileObj.text()
+                      const parsed = await parseCSVString(text)
                       const cleaned = cleanData(parsed.data)
                       const columnTypes = detectColumnTypes(cleaned)
                       const stats = generateDataStats(cleaned)
