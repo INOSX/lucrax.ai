@@ -16,6 +16,49 @@ export class ClientService {
   }
 
   /**
+   * Gera um hash SHA-256 para garantir nomes únicos
+   * @param {string} input - String para gerar hash
+   * @returns {string} Hash SHA-256 (primeiros 8 caracteres)
+   */
+  static generateHash(input) {
+    // Usar Web Crypto API para gerar SHA-256
+    const encoder = new TextEncoder()
+    const data = encoder.encode(input)
+    
+    // Para ambiente Node.js (API route), usar crypto nativo
+    if (typeof window === 'undefined') {
+      const crypto = require('crypto')
+      return crypto.createHash('sha256').update(input).digest('hex').substring(0, 8)
+    }
+    
+    // Para ambiente browser, usar SubtleCrypto (assíncrono)
+    return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 8)
+    })
+  }
+
+  /**
+   * Gera um nome único para assistente ou vectorstore
+   * @param {string} clientCode - Código do cliente
+   * @param {string} type - Tipo: 'assistant' ou 'vectorstore'
+   * @returns {Promise<string>} Nome único
+   */
+  static async generateUniqueName(clientCode, type) {
+    const timestamp = Date.now().toString()
+    const input = `${clientCode}-${type}-${timestamp}`
+    
+    try {
+      const hash = await this.generateHash(input)
+      return `${clientCode}-${type}-${hash}`
+    } catch (error) {
+      // Fallback: usar timestamp e random se hash falhar
+      const random = Math.random().toString(36).substring(2, 6)
+      return `${clientCode}-${type}-${timestamp.substring(-4)}-${random}`
+    }
+  }
+
+  /**
    * Cria um novo cliente com vectorstore e assistente OpenAI
    * @param {Object} clientData - Dados do cliente
    * @param {string} clientData.name - Nome do cliente
@@ -30,14 +73,18 @@ export class ClientService {
       // Gerar código único do cliente
       const clientCode = this.generateClientCode()
       
+      // Gerar nomes únicos
+      const assistantName = await this.generateUniqueName(clientCode, 'assistant')
+      const vectorstoreName = await this.generateUniqueName(clientCode, 'vectorstore')
+
       // 1) Criar assistente primeiro
-      const assistantResult = await OpenAIService.createAssistant(clientCode)
+      const assistantResult = await OpenAIService.createAssistant(clientCode, assistantName)
       if (assistantResult.error) {
         return { success: false, error: `Erro ao criar assistente: ${assistantResult.error}` }
       }
 
       // 2) Criar vectorstore (sem vincular ainda)
-      const vectorstoreResult = await OpenAIService.createVectorstore(clientCode)
+      const vectorstoreResult = await OpenAIService.createVectorstore(clientCode, vectorstoreName)
       if (vectorstoreResult.error) {
         // rollback do assistente se vectorstore falhar
         await OpenAIService.deleteAssistant(assistantResult.assistantId)
@@ -175,10 +222,17 @@ export class ClientService {
         return { success: false, error: 'Cliente inválido' }
       }
 
+      // Gerar nomes únicos se necessário
+      let assistantName, vectorstoreName
+      if (!client.openai_assistant_id || !client.vectorstore_id) {
+        assistantName = await this.generateUniqueName(client.client_code, 'assistant')
+        vectorstoreName = await this.generateUniqueName(client.client_code, 'vectorstore')
+      }
+
       // 1) Criar assistente se ausente
       let assistantId = client.openai_assistant_id
       if (!assistantId) {
-        const asst = await OpenAIService.createAssistant(client.client_code)
+        const asst = await OpenAIService.createAssistant(client.client_code, assistantName)
         if (asst.error) return { success: false, error: asst.error }
         assistantId = asst.assistantId
       }
@@ -186,7 +240,7 @@ export class ClientService {
       // 2) Criar vectorstore se ausente
       let vectorstoreId = client.vectorstore_id
       if (!vectorstoreId) {
-        const vs = await OpenAIService.createVectorstore(client.client_code)
+        const vs = await OpenAIService.createVectorstore(client.client_code, vectorstoreName)
         if (vs.error) {
           // rollback do assistente recém-criado
           if (!client.openai_assistant_id && assistantId) await OpenAIService.deleteAssistant(assistantId)
