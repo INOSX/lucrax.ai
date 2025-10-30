@@ -123,6 +123,22 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
           .upload(originalPath, originalFile, { upsert: true, contentType: originalFile.type || 'application/octet-stream' })
       }
 
+      // 1.2) Salvar também uma CÓPIA CSV no Storage (fonte para gráficos)
+      const csvHeaders = parsedData.columns
+      const csvRows = [csvHeaders.join(',')]
+      parsedData.data.forEach(row => {
+        const values = csvHeaders.map(h => {
+          const v = row[h]
+          if (v === null || v === undefined) return ''
+          const s = String(v)
+          return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s
+        })
+        csvRows.push(values.join(','))
+      })
+      const csvBlob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
+      const storageCsvPath = `${client.id}/${fileName.replace(/\.[^/.]+$/, '.csv')}`
+      await supabase.storage.from('datasets').upload(storageCsvPath, csvBlob, { upsert: true, contentType: 'text/csv' })
+
       // 2) Fazer upload dos dados (em CSV) para o vectorstore do cliente
       const uploadResult = await OpenAIService.uploadDataToVectorstore(
         client.vectorstore_id,
@@ -148,6 +164,8 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
       
       // Fechar modal
       onClose()
+      // Notificar que o Storage foi atualizado (Sidebar recarrega a lista)
+      window.dispatchEvent(new CustomEvent('storage-updated'))
       
     } catch (error) {
       console.error('Erro ao salvar dados:', error)

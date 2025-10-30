@@ -23,6 +23,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [loadingFiles, setLoadingFiles] = useState(false)
   const [error, setError] = useState(null)
   const [selectKey, setSelectKey] = useState(0)
+  const [refreshTick, setRefreshTick] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -66,7 +67,14 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
     loadFiles()
     return () => { mounted = false }
-  }, [user])
+  }, [user, refreshTick])
+
+  // Recarregar quando o upload concluir
+  useEffect(() => {
+    const onUpdated = () => setRefreshTick(t => t + 1)
+    window.addEventListener('storage-updated', onUpdated)
+    return () => window.removeEventListener('storage-updated', onUpdated)
+  }, [])
   const menuItems = [
     {
       icon: BarChart3,
