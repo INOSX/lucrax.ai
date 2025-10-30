@@ -129,11 +129,17 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
 
       // 1) Salvar o ARQUIVO ORIGINAL no Supabase Storage (para visualização e vínculo)
       if (originalFile) {
-        const originalPath = `${originalFile.name}`
-        const { error: upErr } = await supabase.storage
-          .from(bucket)
-          .upload(originalPath, originalFile, { upsert: true, contentType: originalFile.type || 'application/octet-stream' })
-        if (upErr) throw new Error(`Erro ao enviar arquivo original: ${upErr.message || 'desconhecido'}`)
+        const ab = await originalFile.arrayBuffer()
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(ab)))
+        const resp = await fetch('/api/supabase/storage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'upload', bucket, path: originalFile.name, data: base64, contentType: originalFile.type || 'application/octet-stream' })
+        })
+        if (!resp.ok) {
+          const errJ = await resp.json().catch(() => ({}))
+          throw new Error(`Erro ao enviar arquivo original: ${errJ.error || resp.statusText}`)
+        }
       }
 
       // 1.2) Salvar também uma CÓPIA CSV no Storage (fonte para gráficos)
@@ -151,8 +157,17 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
       const csvBlob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
       const storageCsvPath = `${fileName.replace(/\.[^/.]+$/, '.csv')}`
       {
-        const { error: upCsvErr } = await supabase.storage.from(bucket).upload(storageCsvPath, csvBlob, { upsert: true, contentType: 'text/csv' })
-        if (upCsvErr) throw new Error(`Erro ao enviar CSV: ${upCsvErr.message || 'desconhecido'}`)
+        const ab = await csvBlob.arrayBuffer()
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(ab)))
+        const resp = await fetch('/api/supabase/storage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'upload', bucket, path: storageCsvPath, data: base64, contentType: 'text/csv' })
+        })
+        if (!resp.ok) {
+          const errJ = await resp.json().catch(() => ({}))
+          throw new Error(`Erro ao enviar CSV: ${errJ.error || resp.statusText}`)
+        }
       }
 
       // 2) Fazer upload dos dados (em CSV) para o vectorstore do cliente

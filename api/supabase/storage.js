@@ -44,6 +44,18 @@ export default async function handler(req, res) {
         return res.status(200).json({ bucket: userId, existed: false })
       }
 
+      case 'upload': {
+        const { bucket, path, data, contentType } = req.body || {}
+        if (!bucket || !path || !data) return res.status(400).json({ error: 'bucket, path e data são obrigatórios' })
+        const buffer = Buffer.from(data, 'base64')
+        const { error: upErr } = await admin.storage.from(bucket).upload(path, buffer, {
+          upsert: true,
+          contentType: contentType || 'application/octet-stream'
+        })
+        if (upErr) throw upErr
+        return res.status(200).json({ ok: true })
+      }
+
       default:
         return res.status(400).json({ error: 'Invalid action' })
     }
