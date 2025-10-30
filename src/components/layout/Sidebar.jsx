@@ -171,90 +171,81 @@ const Sidebar = ({ isOpen, onClose }) => {
               })}
             </div>
 
-            {/* Selector de Arquivo do Supabase */}
+            {/* Lista de Arquivos do Supabase */}
             <div className="mt-6">
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Selecionar Arquivo (Supabase)
+                Arquivos (Supabase)
               </h3>
-              <div className="px-3">
-                <select
-                  key={selectKey}
-                  className="w-full input text-sm"
-                  disabled={loadingFiles}
-                  onChange={async (e) => {
-                    const fileName = e.target.value
-                    if (!fileName) return
-                    try {
-                      const meta = vectorFiles.find(v => v.id === fileName)
-                      if (!meta) {
-                        setError('Arquivo não encontrado na lista atual. Clique em "Recarregar lista" e tente novamente.')
-                        return
-                      }
-                      const clientResult = await ClientService.getClientByUserId(user.id)
-                      if (!clientResult.success) throw new Error('Cliente não encontrado')
-                      const folder = String(clientResult.client.id)
-                      console.log(`Baixando arquivo do Supabase Storage: ${folder}/${meta.name}`)
-                      let { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${meta.name}`)
-
-                      // Tentar correspondência por case-insensitive quando 400/404
-                      if (downloadError) {
-                        console.warn('Download do Storage falhou, tentando correspondência flexível...', downloadError)
-                        const listResp = await supabase.storage.from('datasets').list(folder)
-                        const entries = listResp.data || []
-                        const ci = (s) => (s || '').toLowerCase()
-                        const target = ci(meta.name)
-                        const match = entries.find(e => ci(e.name) === target)
-                        if (match) {
-                          const dl2 = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
-                          if (dl2.error) throw new Error(`Erro ao baixar arquivo do Storage (match): ${dl2.error.message || 'desconhecido'}`)
-                          fileObj = dl2.data
-                        } else {
-                          throw new Error('Arquivo não encontrado no Storage do cliente.')
-                        }
-                      }
-                      
-                      // Detectar extensão e fazer parse adequado
-                      let parsed
-                      if (meta.name.toLowerCase().endsWith('.csv')) {
-                        const text = await fileObj.text()
-                        parsed = await parseCSVString(text)
-                      } else {
-                        const buf = await fileObj.arrayBuffer()
-                        parsed = parseExcelFromArrayBuffer(buf)
-                      }
-                      const cleaned = cleanData(parsed.data)
-                      const columnTypes = detectColumnTypes(cleaned)
-                      const stats = generateDataStats(cleaned)
-                      const dataset = {
-                        id: fileName,
-                        name: meta?.name || 'Arquivo do Supabase',
-                        data: cleaned,
-                        columns: parsed.columns,
-                        row_count: parsed.rowCount,
-                        columnTypes,
-                        stats,
-                        created_at: Date.now()
-                      }
-                      window.dispatchEvent(new CustomEvent('dataset-selected', { detail: dataset }))
-                    } catch (err) {
-                      console.error('Falha ao carregar arquivo do Supabase Storage:', err)
-                    }
-                  }}
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    {loadingFiles ? 'Carregando...' : (error ? 'Erro ao carregar' : 'Escolha um arquivo')}
-                  </option>
-                  {vectorFiles.map(f => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
-                  ))}
-                </select>
-                <div className="mt-2 text-xs text-gray-500">
+              <div className="px-3 space-y-2">
+                {loadingFiles && (
+                  <div className="text-xs text-gray-500">Carregando...</div>
+                )}
+                {!loadingFiles && error && (
+                  <div className="text-xs text-red-600">{error}</div>
+                )}
+                {!loadingFiles && !error && vectorFiles.length === 0 && (
+                  <div className="text-xs text-gray-500">Nenhum arquivo encontrado no Supabase para este cliente.</div>
+                )}
+                {!loadingFiles && !error && vectorFiles.length > 0 && (
+                  <ul className="divide-y divide-gray-200 border rounded-lg">
+                    {vectorFiles.map(file => (
+                      <li key={file.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                        <span className="truncate mr-2">{file.name}</span>
+                        <button
+                          className="text-primary-600 hover:text-primary-700"
+                          onClick={async () => {
+                            try {
+                              const cr = await ClientService.getClientByUserId(user.id)
+                              if (!cr.success) throw new Error('Cliente não encontrado')
+                              const folder = String(cr.client.id)
+                              let { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${file.name}`)
+                              if (downloadError) {
+                                const listResp = await supabase.storage.from('datasets').list(folder)
+                                const entries = listResp.data || []
+                                const ci = (s) => (s || '').toLowerCase()
+                                const match = entries.find(e => ci(e.name) === ci(file.name))
+                                if (!match) throw new Error('Arquivo não encontrado no Storage do cliente.')
+                                const dl2 = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
+                                if (dl2.error) throw new Error(dl2.error.message || 'Erro ao baixar do Storage')
+                                fileObj = dl2.data
+                              }
+                              let parsed
+                              if (file.name.toLowerCase().endsWith('.csv')) {
+                                const text = await fileObj.text()
+                                parsed = await parseCSVString(text)
+                              } else {
+                                const buf = await fileObj.arrayBuffer()
+                                parsed = parseExcelFromArrayBuffer(buf)
+                              }
+                              const cleaned = cleanData(parsed.data)
+                              const columnTypes = detectColumnTypes(cleaned)
+                              const stats = generateDataStats(cleaned)
+                              const dataset = {
+                                id: file.id,
+                                name: file.name,
+                                data: cleaned,
+                                columns: parsed.columns,
+                                row_count: parsed.rowCount,
+                                columnTypes,
+                                stats,
+                                created_at: Date.now()
+                              }
+                              window.dispatchEvent(new CustomEvent('dataset-selected', { detail: dataset }))
+                            } catch (err) {
+                              console.error('Falha ao carregar arquivo do Supabase Storage:', err)
+                              setError(err.message)
+                            }
+                          }}
+                        >Usar</button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="text-xs text-gray-500">
                   <button
                     className="underline"
                     onClick={(e) => {
                       e.preventDefault()
-                      // Recarregar lista manualmente a partir do Supabase Storage
                       ;(async () => {
                         setLoadingFiles(true)
                         try {
