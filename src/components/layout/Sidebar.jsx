@@ -34,36 +34,18 @@ const Sidebar = ({ isOpen, onClose }) => {
       try {
         const cr = await ClientService.getClientByUserId(user.id)
         if (!cr.success) throw new Error('Cliente não encontrado')
-        // Listar SOMENTE os arquivos do Supabase Storage do cliente
-        const folder = String(cr.client.id)
-        let { data: storageEntries, error: storageErr } = await supabase.storage.from('datasets').list(folder)
-        if (storageErr) {
-          console.warn('Falha ao listar Storage. Tentando recuperar via metadados do banco...', storageErr.message)
-          storageEntries = []
-        }
-
-        let items = (storageEntries || [])
-          .filter(e => (e.name || '').toLowerCase().endsWith('.csv'))
-          .map(e => ({ id: e.name, name: e.name }))
-
-        // Fallback: se o Storage não retornou nada, buscar nomes em data_sources_new e tentar localizar no Storage
-        if (items.length === 0) {
-          const { data: rows, error: rowsErr } = await supabase
-            .from('data_sources_new')
-            .select('filename')
-            .eq('client_id', cr.client.id)
-            .order('created_at', { ascending: false })
-            .limit(50)
-          if (!rowsErr && rows && rows.length > 0) {
-            // Re-listar a pasta para garantir
-            const list2 = await supabase.storage.from('datasets').list(folder)
-            const present = new Set((list2.data || []).map(e => (e.name || '').toLowerCase()))
-            items = rows
-              .map(r => (r.filename || '').replace(/\.[^/.]+$/, '.csv'))
-              .filter(name => !!name && present.has(name.toLowerCase()))
-              .map(name => ({ id: name, name }))
-          }
-        }
+        // 1) Buscar pela tabela data_sources_new (fonte de verdade do usuário)
+        const { data: rows, error: rowsErr } = await supabase
+          .from('data_sources_new')
+          .select('filename')
+          .eq('client_id', cr.client.id)
+          .order('created_at', { ascending: false })
+          .limit(100)
+        if (rowsErr) throw rowsErr
+        let items = (rows || [])
+          .map(r => (r.filename || '').replace(/\.[^/.]+$/, '.csv'))
+          .filter(name => !!name)
+          .map(name => ({ id: name, name }))
 
         if (!mounted) return
         setVectorFiles(items)
@@ -203,7 +185,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <select
                   key={selectKey}
                   className="w-full input text-sm"
-                  disabled={loadingFiles || !!error || vectorFiles.length === 0}
+                  disabled={loadingFiles}
                    onChange={async (e) => {
                     const fileName = e.target.value
                     if (!fileName) return
