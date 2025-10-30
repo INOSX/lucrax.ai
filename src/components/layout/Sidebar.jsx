@@ -34,23 +34,13 @@ const Sidebar = ({ isOpen, onClose }) => {
       try {
         const cr = await ClientService.getClientByUserId(user.id)
         if (!cr.success) throw new Error('Cliente não encontrado')
-        // 1) Buscar pela tabela data_sources_new (fonte de verdade do usuário)
-        const { data: rows, error: rowsErr } = await supabase
-          .from('data_sources_new')
-          .select('filename')
-          .eq('client_id', cr.client.id)
-          .order('created_at', { ascending: false })
-          .limit(100)
-        if (rowsErr) throw rowsErr
-        // Listagem do Storage para confirmar existência
         const folder = String(cr.client.id)
+        // Listar DIRETAMENTE os arquivos do Supabase Storage do cliente
         const { data: storageEntries, error: stErr } = await supabase.storage.from('datasets').list(folder)
         if (stErr) throw stErr
-        const present = new Set((storageEntries || []).map(e => (e.name || '').toLowerCase()))
-        let items = (rows || [])
-          .map(r => (r.filename || '').replace(/\.[^/.]+$/, '.csv'))
-          .filter(name => !!name && present.has(name.toLowerCase()))
-          .map(name => ({ id: name, name }))
+        let items = (storageEntries || [])
+          .filter(e => !!e.name && (e.name.endsWith('.csv') || e.name.endsWith('.xlsx') || e.name.endsWith('.xls')))
+          .map(e => ({ id: e.name, name: e.name }))
 
         if (!mounted) return
         setVectorFiles(items)
@@ -223,8 +213,15 @@ const Sidebar = ({ isOpen, onClose }) => {
                         }
                       }
                       
-                      const text = await fileObj.text()
-                      const parsed = await parseCSVString(text)
+                      // Detectar extensão e fazer parse adequado
+                      let parsed
+                      if (meta.name.toLowerCase().endsWith('.csv')) {
+                        const text = await fileObj.text()
+                        parsed = await parseCSVString(text)
+                      } else {
+                        const buf = await fileObj.arrayBuffer()
+                        parsed = parseExcelFromArrayBuffer(buf)
+                      }
                       const cleaned = cleanData(parsed.data)
                       const columnTypes = detectColumnTypes(cleaned)
                       const stats = generateDataStats(cleaned)
@@ -257,22 +254,17 @@ const Sidebar = ({ isOpen, onClose }) => {
                     className="underline"
                     onClick={(e) => {
                       e.preventDefault()
-                      // Recarregar lista manualmente a partir do banco
+                      // Recarregar lista manualmente a partir do Supabase Storage
                       ;(async () => {
                         setLoadingFiles(true)
                         try {
                           const cr = await ClientService.getClientByUserId(user.id)
                           if (!cr.success) throw new Error('Cliente não encontrado')
-                          const { data: rows } = await supabase
-                            .from('data_sources_new')
-                            .select('filename')
-                            .eq('client_id', cr.client.id)
-                            .order('created_at', { ascending: false })
-                            .limit(100)
-                          const items = (rows || [])
-                            .map(r => (r.filename || '').replace(/\.[^/.]+$/, '.csv'))
-                            .filter(name => !!name)
-                            .map(name => ({ id: name, name }))
+                          const folder = String(cr.client.id)
+                          const { data: storageEntries } = await supabase.storage.from('datasets').list(folder)
+                          const items = (storageEntries || [])
+                            .filter(e => !!e.name && (e.name.endsWith('.csv') || e.name.endsWith('.xlsx') || e.name.endsWith('.xls')))
+                            .map(e => ({ id: e.name, name: e.name }))
                           setVectorFiles(items)
                         } catch (err) {
                           setError(err.message)
