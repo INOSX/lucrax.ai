@@ -34,24 +34,14 @@ const Sidebar = ({ isOpen, onClose }) => {
       try {
         const cr = await ClientService.getClientByUserId(user.id)
         if (!cr.success) throw new Error('Cliente não encontrado')
-        const vs = cr.client.vectorstore_id
-        if (!vs) throw new Error('Vectorstore não configurado')
-        // 1) Buscar lista ATUAL do Vector Store
-        const list = await OpenAIService.listVectorstoreFiles(vs)
-
-        // 2) Buscar lista do Storage do cliente para cruzamento
+        // Listar SOMENTE os arquivos do Supabase Storage do cliente
         const folder = String(cr.client.id)
         const { data: storageEntries, error: storageErr } = await supabase.storage.from('datasets').list(folder)
-        if (storageErr) {
-          console.warn('Aviso: falha ao listar Storage:', storageErr.message)
-        }
-        const storageSet = new Set((storageEntries || []).map(e => (e.name || '').toLowerCase()))
+        if (storageErr) throw storageErr
 
-        // 3) Montar lista final, filtrando itens sem correspondente no Storage
-        const items = (list.data || [])
-          .map(f => ({ id: f.file_id || f.id, name: f.filename || f.id }))
-          .filter(f => storageSet.has((f.name || '').toLowerCase().replace(/\.[^/.]+$/, '.csv'))
-            || storageSet.has((f.name || '').toLowerCase()))
+        const items = (storageEntries || [])
+          .filter(e => (e.name || '').toLowerCase().endsWith('.csv'))
+          .map(e => ({ id: e.name, name: e.name }))
 
         if (!mounted) return
         setVectorFiles(items)
@@ -192,11 +182,11 @@ const Sidebar = ({ isOpen, onClose }) => {
                   key={selectKey}
                   className="w-full input text-sm"
                   disabled={loadingFiles || !!error || vectorFiles.length === 0}
-                  onChange={async (e) => {
-                    const fileId = e.target.value
-                    if (!fileId) return
+                   onChange={async (e) => {
+                    const fileName = e.target.value
+                    if (!fileName) return
                     try {
-                      const meta = vectorFiles.find(v => v.id === fileId)
+                      const meta = vectorFiles.find(v => v.id === fileName)
                       if (!meta) {
                         setError('Arquivo não encontrado na lista atual. Clique em "Recarregar lista" e tente novamente.')
                         return
@@ -204,36 +194,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                       const clientResult = await ClientService.getClientByUserId(user.id)
                       if (!clientResult.success) throw new Error('Cliente não encontrado')
                       const folder = String(clientResult.client.id)
-                      const baseCsv = (meta?.name || 'arquivo').replace(/\.[^/.]+$/, '.csv')
-
-                      // Apenas Supabase Storage (sem tentar OpenAI)
-                      console.log(`Tentando baixar: ${folder}/${baseCsv}`)
-                      
-                      // Primeiro, listar o que existe na pasta
-                      const { data: entries, error: listError } = await supabase.storage.from('datasets').list(folder)
-                      console.log('Arquivos disponíveis na pasta:', entries)
-                      
-                      if (listError) {
-                        throw new Error(`Erro ao listar pasta: ${listError.message}`)
-                      }
-                      
-                      if (!entries || entries.length === 0) {
-                        window.dispatchEvent(new CustomEvent('open-upload', { detail: { reason: 'empty-storage' } }))
-                        throw new Error('Nenhum arquivo encontrado na pasta do cliente. Faça upload de um arquivo primeiro.')
-                      }
-                      
-                      // Procurar por arquivo CSV que corresponda ao nome
-                      const ci = (s) => (s || '').toLowerCase()
-                      const match = entries.find(e => ci(e.name) === ci(baseCsv))
-                      
-                      if (!match) {
-                        console.log('Arquivo exato não encontrado. Arquivos disponíveis:', entries.map(e => e.name))
-                        window.dispatchEvent(new CustomEvent('open-upload', { detail: { reason: 'file-not-found', expected: baseCsv, available: entries.map(e => e.name) } }))
-                        throw new Error(`Arquivo ${baseCsv} não encontrado. Arquivos disponíveis: ${entries.map(e => e.name).join(', ')}`)
-                      }
-                      
-                      console.log(`Baixando arquivo: ${folder}/${match.name}`)
-                      const { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
+                      console.log(`Baixando arquivo do Storage: ${folder}/${meta.name}`)
+                      const { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${meta.name}`)
                       
                       if (downloadError) {
                         throw new Error(`Erro ao baixar arquivo: ${downloadError.message}`)
