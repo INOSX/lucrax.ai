@@ -34,15 +34,25 @@ const Sidebar = ({ isOpen, onClose }) => {
         if (!cr.success) throw new Error('Cliente não encontrado')
         const vs = cr.client.vectorstore_id
         if (!vs) throw new Error('Vectorstore não configurado')
+        // 1) Buscar lista ATUAL do Vector Store
         const list = await OpenAIService.listVectorstoreFiles(vs)
 
-        // Evitar chamadas 400: por ora não buscamos metadados adicionais
+        // 2) Buscar lista do Storage do cliente para cruzamento
+        const folder = String(cr.client.id)
+        const { data: storageEntries, error: storageErr } = await supabase.storage.from('datasets').list(folder)
+        if (storageErr) {
+          console.warn('Aviso: falha ao listar Storage:', storageErr.message)
+        }
+        const storageSet = new Set((storageEntries || []).map(e => (e.name || '').toLowerCase()))
+
+        // 3) Montar lista final, filtrando itens sem correspondente no Storage
+        const items = (list.data || [])
+          .map(f => ({ id: f.file_id || f.id, name: f.filename || f.id }))
+          .filter(f => storageSet.has((f.name || '').toLowerCase().replace(/\.[^/.]+$/, '.csv'))
+            || storageSet.has((f.name || '').toLowerCase()))
+
         if (!mounted) return
-        setVectorFiles((list.data || []).map(f => ({
-          id: f.file_id || f.id,
-          name: f.filename || f.id,
-          storagePath: null
-        })))
+        setVectorFiles(items)
       } catch (e) {
         if (!mounted) return
         setError(e.message)
@@ -241,6 +251,36 @@ const Sidebar = ({ isOpen, onClose }) => {
                     <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
                 </select>
+                <div className="mt-2 text-xs text-gray-500">
+                  <button
+                    className="underline"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      // Recarregar lista manualmente
+                      ;(async () => {
+                        setLoadingFiles(true)
+                        try {
+                          const cr = await ClientService.getClientByUserId(user.id)
+                          if (!cr.success) throw new Error('Cliente não encontrado')
+                          const vs = cr.client.vectorstore_id
+                          const list = await OpenAIService.listVectorstoreFiles(vs)
+                          const folder = String(cr.client.id)
+                          const { data: storageEntries } = await supabase.storage.from('datasets').list(folder)
+                          const storageSet = new Set((storageEntries || []).map(e => (e.name || '').toLowerCase()))
+                          const items = (list.data || [])
+                            .map(f => ({ id: f.file_id || f.id, name: f.filename || f.id }))
+                            .filter(f => storageSet.has((f.name || '').toLowerCase().replace(/\.[^/.]+$/, '.csv'))
+                              || storageSet.has((f.name || '').toLowerCase()))
+                          setVectorFiles(items)
+                        } catch (err) {
+                          setError(err.message)
+                        } finally {
+                          setLoadingFiles(false)
+                        }
+                      })()
+                    }}
+                  >Recarregar lista</button>
+                </div>
               </div>
             </div>
 
