@@ -14,6 +14,7 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
   const [uploadError, setUploadError] = useState(null)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [parsedData, setParsedData] = useState(null)
+  const [originalFile, setOriginalFile] = useState(null)
   const [dataStats, setDataStats] = useState(null)
   const [fileName, setFileName] = useState('')
 
@@ -51,6 +52,7 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
         columnTypes,
         stats
       })
+      setOriginalFile(file)
       setDataStats(stats)
       setUploadSuccess(true)
       
@@ -113,26 +115,15 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
         throw new Error(`Erro ao salvar metadados: ${dataSourceError.message}`)
       }
 
-      // Fazer upload de uma cópia em CSV para o Supabase Storage (para leitura/visualização)
-      const csvHeaders = parsedData.columns
-      const csvRows = [csvHeaders.join(',')]
-      parsedData.data.forEach(row => {
-        const values = csvHeaders.map(h => {
-          const v = row[h]
-          if (v === null || v === undefined) return ''
-          const s = String(v)
-          return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s
-        })
-        csvRows.push(values.join(','))
-      })
-      const csvBlob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
-      const storagePath = `${client.id}/${fileName.replace(/\.[^/.]+$/, '.csv')}`
-      await supabase.storage.from('datasets').upload(storagePath, csvBlob, { upsert: true, contentType: 'text/csv' })
+      // 1) Salvar o ARQUIVO ORIGINAL no Supabase Storage (para visualização e vínculo)
+      if (originalFile) {
+        const originalPath = `${client.id}/${originalFile.name}`
+        await supabase.storage
+          .from('datasets')
+          .upload(originalPath, originalFile, { upsert: true, contentType: originalFile.type || 'application/octet-stream' })
+      }
 
-      // Atualizar a linha com storage_path
-      await supabase.from('data_sources_new').update({ storage_path: storagePath }).eq('id', savedDataSource.id)
-
-      // Fazer upload dos dados para o vectorstore do cliente
+      // 2) Fazer upload dos dados (em CSV) para o vectorstore do cliente
       const uploadResult = await OpenAIService.uploadDataToVectorstore(
         client.vectorstore_id,
         parsedData.data,
