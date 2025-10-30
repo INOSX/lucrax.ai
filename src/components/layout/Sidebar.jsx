@@ -34,9 +34,9 @@ const Sidebar = ({ isOpen, onClose }) => {
       try {
         const cr = await ClientService.getClientByUserId(user.id)
         if (!cr.success) throw new Error('Cliente não encontrado')
-        const folder = String(cr.client.id)
-        // Listar DIRETAMENTE os arquivos do Supabase Storage do cliente
-        const { data: storageEntries, error: stErr } = await supabase.storage.from('datasets').list(folder)
+        const bucket = String(cr.client.id)
+        // Listar DIRETAMENTE os arquivos do Supabase Storage do cliente (bucket por usuário)
+        const { data: storageEntries, error: stErr } = await supabase.storage.from(bucket).list('')
         if (stErr) throw stErr
         let items = (storageEntries || [])
           .filter(e => !!e.name && (e.name.endsWith('.csv') || e.name.endsWith('.xlsx') || e.name.endsWith('.xls')))
@@ -197,15 +197,15 @@ const Sidebar = ({ isOpen, onClose }) => {
                             try {
                               const cr = await ClientService.getClientByUserId(user.id)
                               if (!cr.success) throw new Error('Cliente não encontrado')
-                              const folder = String(cr.client.id)
-                              let { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${file.name}`)
+                              const bucket = String(cr.client.id)
+                              let { data: fileObj, error: downloadError } = await supabase.storage.from(bucket).download(`${file.name}`)
                               if (downloadError) {
-                                const listResp = await supabase.storage.from('datasets').list(folder)
+                                const listResp = await supabase.storage.from(bucket).list('')
                                 const entries = listResp.data || []
                                 const ci = (s) => (s || '').toLowerCase()
                                 const match = entries.find(e => ci(e.name) === ci(file.name))
                                 if (!match) throw new Error('Arquivo não encontrado no Storage do cliente.')
-                                const dl2 = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
+                                const dl2 = await supabase.storage.from(bucket).download(`${match.name}`)
                                 if (dl2.error) throw new Error(dl2.error.message || 'Erro ao baixar do Storage')
                                 fileObj = dl2.data
                               }

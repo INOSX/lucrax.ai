@@ -93,6 +93,18 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
         throw new Error('Vectorstore não configurado para este cliente.')
       }
 
+      // Garantir bucket do usuário no Supabase (chama API com service role)
+      const ensureResp = await fetch('/api/supabase/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'ensureBucket', userId: client.id })
+      })
+      if (!ensureResp.ok) {
+        const err = await ensureResp.json().catch(() => ({}))
+        throw new Error(`Falha ao garantir bucket: ${err.error || ensureResp.statusText}`)
+      }
+      const { bucket } = await ensureResp.json()
+
       // Salvar metadados no Supabase
       const { supabase } = await import('../../services/supabase')
       
@@ -117,10 +129,11 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
 
       // 1) Salvar o ARQUIVO ORIGINAL no Supabase Storage (para visualização e vínculo)
       if (originalFile) {
-        const originalPath = `${client.id}/${originalFile.name}`
-        await supabase.storage
-          .from('datasets')
+        const originalPath = `${originalFile.name}`
+        const { error: upErr } = await supabase.storage
+          .from(bucket)
           .upload(originalPath, originalFile, { upsert: true, contentType: originalFile.type || 'application/octet-stream' })
+        if (upErr) throw new Error(`Erro ao enviar arquivo original: ${upErr.message || 'desconhecido'}`)
       }
 
       // 1.2) Salvar também uma CÓPIA CSV no Storage (fonte para gráficos)
@@ -136,8 +149,11 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
         csvRows.push(values.join(','))
       })
       const csvBlob = new Blob([csvRows.join('\n')], { type: 'text/csv' })
-      const storageCsvPath = `${client.id}/${fileName.replace(/\.[^/.]+$/, '.csv')}`
-      await supabase.storage.from('datasets').upload(storageCsvPath, csvBlob, { upsert: true, contentType: 'text/csv' })
+      const storageCsvPath = `${fileName.replace(/\.[^/.]+$/, '.csv')}`
+      {
+        const { error: upCsvErr } = await supabase.storage.from(bucket).upload(storageCsvPath, csvBlob, { upsert: true, contentType: 'text/csv' })
+        if (upCsvErr) throw new Error(`Erro ao enviar CSV: ${upCsvErr.message || 'desconhecido'}`)
+      }
 
       // 2) Fazer upload dos dados (em CSV) para o vectorstore do cliente
       const uploadResult = await OpenAIService.uploadDataToVectorstore(
