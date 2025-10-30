@@ -42,9 +42,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           .order('created_at', { ascending: false })
           .limit(100)
         if (rowsErr) throw rowsErr
+        // Listagem do Storage para confirmar existência
+        const folder = String(cr.client.id)
+        const { data: storageEntries, error: stErr } = await supabase.storage.from('datasets').list(folder)
+        if (stErr) throw stErr
+        const present = new Set((storageEntries || []).map(e => (e.name || '').toLowerCase()))
         let items = (rows || [])
           .map(r => (r.filename || '').replace(/\.[^/.]+$/, '.csv'))
-          .filter(name => !!name)
+          .filter(name => !!name && present.has(name.toLowerCase()))
           .map(name => ({ id: name, name }))
 
         if (!mounted) return
