@@ -186,7 +186,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   key={selectKey}
                   className="w-full input text-sm"
                   disabled={loadingFiles}
-                   onChange={async (e) => {
+                  onChange={async (e) => {
                     const fileName = e.target.value
                     if (!fileName) return
                     try {
@@ -199,10 +199,23 @@ const Sidebar = ({ isOpen, onClose }) => {
                       if (!clientResult.success) throw new Error('Cliente não encontrado')
                       const folder = String(clientResult.client.id)
                       console.log(`Baixando arquivo do Storage: ${folder}/${meta.name}`)
-                      const { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${meta.name}`)
-                      
+                      let { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${meta.name}`)
+
+                      // Tentar correspondência por case-insensitive quando 400/404
                       if (downloadError) {
-                        throw new Error(`Erro ao baixar arquivo: ${downloadError.message}`)
+                        console.warn('Download direto falhou, tentando correspondência flexível...', downloadError)
+                        const listResp = await supabase.storage.from('datasets').list(folder)
+                        const entries = listResp.data || []
+                        const ci = (s) => (s || '').toLowerCase()
+                        const target = ci(meta.name)
+                        const match = entries.find(e => ci(e.name) === target)
+                        if (match) {
+                          const dl2 = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
+                          if (dl2.error) throw new Error(`Erro ao baixar arquivo (match): ${dl2.error.message || 'desconhecido'}`)
+                          fileObj = dl2.data
+                        } else {
+                          throw new Error('Arquivo não encontrado no Storage do cliente.')
+                        }
                       }
                       
                       const text = await fileObj.text()
