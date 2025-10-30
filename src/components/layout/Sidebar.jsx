@@ -22,6 +22,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [vectorFiles, setVectorFiles] = useState([])
   const [loadingFiles, setLoadingFiles] = useState(false)
   const [error, setError] = useState(null)
+  const [selectKey, setSelectKey] = useState(0)
 
   useEffect(() => {
     let mounted = true
@@ -53,9 +54,12 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         if (!mounted) return
         setVectorFiles(items)
+        setSelectKey(prev => prev + 1)
       } catch (e) {
         if (!mounted) return
         setError(e.message)
+        setVectorFiles([])
+        setSelectKey(prev => prev + 1)
       } finally {
         if (mounted) setLoadingFiles(false)
       }
@@ -177,6 +181,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               </h3>
               <div className="px-3">
                 <select
+                  key={selectKey}
                   className="w-full input text-sm"
                   disabled={loadingFiles || !!error || vectorFiles.length === 0}
                   onChange={async (e) => {
@@ -184,6 +189,10 @@ const Sidebar = ({ isOpen, onClose }) => {
                     if (!fileId) return
                     try {
                       const meta = vectorFiles.find(v => v.id === fileId)
+                      if (!meta) {
+                        setError('Arquivo não encontrado na lista atual. Clique em "Recarregar lista" e tente novamente.')
+                        return
+                      }
                       const clientResult = await ClientService.getClientByUserId(user.id)
                       if (!clientResult.success) throw new Error('Cliente não encontrado')
                       const folder = String(clientResult.client.id)
