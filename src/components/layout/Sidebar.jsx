@@ -176,10 +176,10 @@ const Sidebar = ({ isOpen, onClose }) => {
               })}
             </div>
 
-            {/* Selector de Arquivo do Vector Store */}
+            {/* Selector de Arquivo do Supabase */}
             <div className="mt-6">
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Selecionar Arquivo (Vector Store)
+                Selecionar Arquivo (Supabase)
               </h3>
               <div className="px-3">
                 <select
@@ -198,12 +198,12 @@ const Sidebar = ({ isOpen, onClose }) => {
                       const clientResult = await ClientService.getClientByUserId(user.id)
                       if (!clientResult.success) throw new Error('Cliente não encontrado')
                       const folder = String(clientResult.client.id)
-                      console.log(`Baixando arquivo do Storage: ${folder}/${meta.name}`)
+                      console.log(`Baixando arquivo do Supabase Storage: ${folder}/${meta.name}`)
                       let { data: fileObj, error: downloadError } = await supabase.storage.from('datasets').download(`${folder}/${meta.name}`)
 
                       // Tentar correspondência por case-insensitive quando 400/404
                       if (downloadError) {
-                        console.warn('Download direto falhou, tentando correspondência flexível...', downloadError)
+                        console.warn('Download do Storage falhou, tentando correspondência flexível...', downloadError)
                         const listResp = await supabase.storage.from('datasets').list(folder)
                         const entries = listResp.data || []
                         const ci = (s) => (s || '').toLowerCase()
@@ -211,7 +211,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                         const match = entries.find(e => ci(e.name) === target)
                         if (match) {
                           const dl2 = await supabase.storage.from('datasets').download(`${folder}/${match.name}`)
-                          if (dl2.error) throw new Error(`Erro ao baixar arquivo (match): ${dl2.error.message || 'desconhecido'}`)
+                          if (dl2.error) throw new Error(`Erro ao baixar arquivo do Storage (match): ${dl2.error.message || 'desconhecido'}`)
                           fileObj = dl2.data
                         } else {
                           throw new Error('Arquivo não encontrado no Storage do cliente.')
@@ -224,8 +224,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                       const columnTypes = detectColumnTypes(cleaned)
                       const stats = generateDataStats(cleaned)
                       const dataset = {
-                        id: fileId,
-                        name: meta?.name || 'Arquivo do Vector Store',
+                        id: fileName,
+                        name: meta?.name || 'Arquivo do Supabase',
                         data: cleaned,
                         columns: parsed.columns,
                         row_count: parsed.rowCount,
@@ -235,7 +235,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                       }
                       window.dispatchEvent(new CustomEvent('dataset-selected', { detail: dataset }))
                     } catch (err) {
-                      console.error('Falha ao carregar arquivo do vector store:', err)
+                      console.error('Falha ao carregar arquivo do Supabase Storage:', err)
                     }
                   }}
                   defaultValue=""
@@ -252,21 +252,22 @@ const Sidebar = ({ isOpen, onClose }) => {
                     className="underline"
                     onClick={(e) => {
                       e.preventDefault()
-                      // Recarregar lista manualmente
+                      // Recarregar lista manualmente a partir do banco
                       ;(async () => {
                         setLoadingFiles(true)
                         try {
                           const cr = await ClientService.getClientByUserId(user.id)
                           if (!cr.success) throw new Error('Cliente não encontrado')
-                          const vs = cr.client.vectorstore_id
-                          const list = await OpenAIService.listVectorstoreFiles(vs)
-                          const folder = String(cr.client.id)
-                          const { data: storageEntries } = await supabase.storage.from('datasets').list(folder)
-                          const storageSet = new Set((storageEntries || []).map(e => (e.name || '').toLowerCase()))
-                          const items = (list.data || [])
-                            .map(f => ({ id: f.file_id || f.id, name: f.filename || f.id }))
-                            .filter(f => storageSet.has((f.name || '').toLowerCase().replace(/\.[^/.]+$/, '.csv'))
-                              || storageSet.has((f.name || '').toLowerCase()))
+                          const { data: rows } = await supabase
+                            .from('data_sources_new')
+                            .select('filename')
+                            .eq('client_id', cr.client.id)
+                            .order('created_at', { ascending: false })
+                            .limit(100)
+                          const items = (rows || [])
+                            .map(r => (r.filename || '').replace(/\.[^/.]+$/, '.csv'))
+                            .filter(name => !!name)
+                            .map(name => ({ id: name, name }))
                           setVectorFiles(items)
                         } catch (err) {
                           setError(err.message)
