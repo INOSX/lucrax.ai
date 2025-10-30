@@ -70,6 +70,13 @@ const Dashboard = () => {
     return () => window.removeEventListener('dataset-selected', handler)
   }, [])
 
+  // Abrir modal de upload quando a Sidebar indicar que o arquivo não existe no Storage
+  useEffect(() => {
+    const openHandler = () => setShowFileUpload(true)
+    window.addEventListener('open-upload', openHandler)
+    return () => window.removeEventListener('open-upload', openHandler)
+  }, [])
+
   const handleChartTypeChange = (type) => {
     setChartType(type)
   }

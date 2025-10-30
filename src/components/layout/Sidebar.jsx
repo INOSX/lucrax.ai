@@ -191,6 +191,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                       }
                       
                       if (!entries || entries.length === 0) {
+                        window.dispatchEvent(new CustomEvent('open-upload', { detail: { reason: 'empty-storage' } }))
                         throw new Error('Nenhum arquivo encontrado na pasta do cliente. Faça upload de um arquivo primeiro.')
                       }
                       
@@ -200,6 +201,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                       
                       if (!match) {
                         console.log('Arquivo exato não encontrado. Arquivos disponíveis:', entries.map(e => e.name))
+                        window.dispatchEvent(new CustomEvent('open-upload', { detail: { reason: 'file-not-found', expected: baseCsv, available: entries.map(e => e.name) } }))
                         throw new Error(`Arquivo ${baseCsv} não encontrado. Arquivos disponíveis: ${entries.map(e => e.name).join(', ')}`)
                       }
                       
