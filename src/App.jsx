@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout'
 import Dashboard from './components/dashboard/Dashboard'
 import Settings from './components/settings/Settings'
 import Datasets from './components/datasets/Datasets'
+import { Analytics } from '@vercel/analytics/react'
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
+          <Analytics />
         </div>
       </BrowserRouter>
     </AuthProvider>
