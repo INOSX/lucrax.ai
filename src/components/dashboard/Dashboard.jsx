@@ -354,10 +354,35 @@ const Dashboard = () => {
             if (hiddenKpiKeys.has(key)) return null
             const minimized = minimizedKpiKeys.has(key)
             return (
-              <Card key={key} className="relative overflow-hidden">
-                <div className="flex items-start justify-between">
+              <Card key={key} className="relative overflow-hidden group">
+                {/* Botões no canto superior direito (estilo Windows) */}
+                <div className="absolute top-0 right-0 z-10 flex items-center bg-white rounded-bl-lg border-l border-b border-gray-200 shadow-sm">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleMinimizeKpi(key)
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                    title={minimized ? 'Expandir' : 'Minimizar'}
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      hideKpi(key)
+                    }}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    title="Fechar"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Conteúdo do card */}
+                <div className="flex items-center justify-between pr-2">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600">{kpi.title}</p>
+                    <p className="text-sm font-medium text-gray-600 pr-16">{kpi.title}</p>
                     {!minimized && (
                       <>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
@@ -374,24 +399,8 @@ const Dashboard = () => {
                       </>
                     )}
                   </div>
-                  <div className="flex items-center space-x-2 ml-2">
-                    <button
-                      onClick={() => toggleMinimizeKpi(key)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                      title={minimized ? 'Expandir' : 'Minimizar'}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => hideKpi(key)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                      title="Fechar"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0 ml-1">
-                      <Icon className="h-6 w-6 text-white" />
-                    </div>
+                  <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon className="h-6 w-6 text-white" />
                   </div>
                 </div>
               </Card>
