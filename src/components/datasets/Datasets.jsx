@@ -28,10 +28,22 @@ const Datasets = () => {
 
         // Bucket do usuário (um bucket por cliente, usando o id do cliente)
         const bucket = String(clientResult.client.id)
-        const { data: storageEntries, error: stErr } = await supabase.storage.from(bucket).list('')
-        if (stErr) throw stErr
+        // Tenta listar arquivos no root do bucket com opções explícitas
+        let storageEntries = []
+        {
+          const { data: listA, error: errA } = await supabase.storage.from(bucket).list('', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } })
+          if (errA) throw errA
+          storageEntries = listA || []
+        }
+        // Fallback: alguns ambientes exigem chamada sem prefixo
+        if (!storageEntries.length) {
+          const { data: listB, error: errB } = await supabase.storage.from(bucket).list('')
+          if (errB) throw errB
+          storageEntries = listB || []
+        }
+
         if (!mounted) return
-        const mapped = (storageEntries || []).map(e => ({
+        let mapped = (storageEntries || []).map(e => ({
           id: e.id || e.name,
           filename: e.name,
           // Supabase retorna size em bytes quando list v2? Aqui e.size pode não existir; manter "—" quando indefinido
@@ -40,6 +52,25 @@ const Datasets = () => {
           created_at: e.created_at ? Date.parse(e.created_at) / 1000 : undefined,
           file_id: e.id || e.name
         }))
+        
+        // Fallback adicional: se nada no Storage, mostrar o que há em data_sources_new
+        if (!mapped.length) {
+          const { data: rows, error: rowsErr } = await supabase
+            .from('data_sources_new')
+            .select('filename, file_size, created_at')
+            .eq('client_id', clientResult.client.id)
+            .order('created_at', { ascending: false })
+          if (!rowsErr && Array.isArray(rows)) {
+            mapped = rows.map(r => ({
+              id: r.filename,
+              filename: r.filename,
+              bytes: typeof r.file_size === 'number' ? r.file_size : undefined,
+              status: '—',
+              created_at: r.created_at ? Date.parse(r.created_at) / 1000 : undefined,
+              file_id: r.filename
+            }))
+          }
+        }
         setItems(mapped)
       } catch (err) {
         if (!mounted) return
