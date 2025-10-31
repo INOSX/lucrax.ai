@@ -26,55 +26,101 @@ const Datasets = () => {
         if (!mounted) return
         setClient(clientResult.client)
 
-        // Bucket do usuário (um bucket por cliente, usando o id do cliente)
-        const bucket = String(clientResult.client.id)
-        // Tenta listar arquivos no root do bucket com opções explícitas
-        let storageEntries = []
-        {
-          const { data: listA, error: errA } = await supabase.storage.from(bucket).list('', { limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } })
-          if (errA) throw errA
-          storageEntries = listA || []
+        const clientId = clientResult.client.id
+        let mapped = []
+
+        // Primeiro, tentar buscar da tabela data_sources_new (fonte confiável de metadados)
+        const { data: dbRows, error: dbErr } = await supabase
+          .from('data_sources_new')
+          .select('id, filename, file_type, file_size, created_at, row_count, column_count')
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false })
+
+        if (dbErr) {
+          console.error('Erro ao buscar data_sources_new:', dbErr, 'clientId:', clientId)
+          setError(`Erro ao buscar dados: ${dbErr.message || dbErr}`)
+        } else if (Array.isArray(dbRows) && dbRows.length > 0) {
+          console.log('Datasets encontrados na tabela:', dbRows.length, dbRows)
+          // Usar dados da tabela como fonte principal
+          mapped = dbRows.map(r => ({
+            id: r.id || r.filename,
+            filename: r.filename || '—',
+            bytes: typeof r.file_size === 'number' ? r.file_size : undefined,
+            status: 'completed',
+            created_at: r.created_at ? (typeof r.created_at === 'string' ? Date.parse(r.created_at) / 1000 : r.created_at) : undefined,
+            file_id: r.id || r.filename,
+            file_type: r.file_type,
+            row_count: r.row_count,
+            column_count: r.column_count
+          }))
         }
-        // Fallback: alguns ambientes exigem chamada sem prefixo
-        if (!storageEntries.length) {
-          const { data: listB, error: errB } = await supabase.storage.from(bucket).list('')
-          if (errB) throw errB
-          storageEntries = listB || []
+
+        // Tentar complementar com dados do Storage (tamanho real, etc)
+        if (mounted) {
+          const bucket = String(clientId)
+          try {
+            const { data: storageEntries, error: stErr } = await supabase.storage.from(bucket).list('', {
+              limit: 1000,
+              sortBy: { column: 'name', order: 'asc' }
+            })
+            
+            if (!stErr && Array.isArray(storageEntries) && storageEntries.length > 0) {
+              // Criar mapa de arquivos do storage por nome
+              const storageMap = new Map()
+              storageEntries.forEach(e => {
+                if (e.name) {
+                  storageMap.set(e.name, {
+                    size: e.metadata?.size || e.size,
+                    created_at: e.created_at ? (typeof e.created_at === 'string' ? Date.parse(e.created_at) / 1000 : e.created_at) : undefined,
+                    id: e.id || e.name
+                  })
+                }
+              })
+
+              // Atualizar dados com informações do storage quando disponível
+              mapped = mapped.map(item => {
+                const storageInfo = storageMap.get(item.filename)
+                if (storageInfo) {
+                  return {
+                    ...item,
+                    bytes: storageInfo.size || item.bytes,
+                    created_at: storageInfo.created_at || item.created_at,
+                    file_id: storageInfo.id || item.file_id
+                  }
+                }
+                return item
+              })
+
+              // Adicionar arquivos do storage que não estão na tabela (se houver)
+              storageEntries.forEach(e => {
+                if (e.name && !mapped.find(m => m.filename === e.name)) {
+                  mapped.push({
+                    id: e.id || e.name,
+                    filename: e.name,
+                    bytes: e.metadata?.size || e.size,
+                    status: 'completed',
+                    created_at: e.created_at ? (typeof e.created_at === 'string' ? Date.parse(e.created_at) / 1000 : e.created_at) : undefined,
+                    file_id: e.id || e.name
+                  })
+                }
+              })
+            } else if (stErr) {
+              console.warn('Erro ao buscar Storage:', stErr)
+              // Não falhar completamente se Storage falhar, usar apenas dados da tabela
+            }
+          } catch (storageErr) {
+            console.warn('Erro ao acessar Storage:', storageErr)
+            // Continuar com dados da tabela mesmo se Storage falhar
+          }
         }
 
         if (!mounted) return
-        let mapped = (storageEntries || []).map(e => ({
-          id: e.id || e.name,
-          filename: e.name,
-          // Supabase retorna size em bytes quando list v2? Aqui e.size pode não existir; manter "—" quando indefinido
-          bytes: typeof e.metadata?.size === 'number' ? e.metadata.size : (typeof e.size === 'number' ? e.size : undefined),
-          status: '—',
-          created_at: e.created_at ? Date.parse(e.created_at) / 1000 : undefined,
-          file_id: e.id || e.name
-        }))
-        
-        // Fallback adicional: se nada no Storage, mostrar o que há em data_sources_new
-        if (!mapped.length) {
-          const { data: rows, error: rowsErr } = await supabase
-            .from('data_sources_new')
-            .select('filename, file_size, created_at')
-            .eq('client_id', clientResult.client.id)
-            .order('created_at', { ascending: false })
-          if (!rowsErr && Array.isArray(rows)) {
-            mapped = rows.map(r => ({
-              id: r.filename,
-              filename: r.filename,
-              bytes: typeof r.file_size === 'number' ? r.file_size : undefined,
-              status: '—',
-              created_at: r.created_at ? Date.parse(r.created_at) / 1000 : undefined,
-              file_id: r.filename
-            }))
-          }
-        }
+        console.log('Total de datasets mapeados:', mapped.length, mapped)
         setItems(mapped)
       } catch (err) {
         if (!mounted) return
-        setError(err.message)
+        console.error('Erro ao carregar datasets:', err)
+        setError(err.message || 'Erro ao carregar datasets')
       } finally {
         if (mounted) setIsLoading(false)
       }
@@ -91,7 +137,7 @@ const Datasets = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Meus Datasets</h1>
-        <p className="text-sm text-gray-600">Arquivos presentes no seu bucket do Supabase</p>
+        <p className="text-sm text-gray-600">Arquivos presentes no seu bucket do Supabase e tabela de datasets</p>
       </div>
 
       <Card>
