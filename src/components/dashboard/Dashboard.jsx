@@ -17,6 +17,7 @@ import {
   X,
   Minus
 } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 
 const Dashboard = () => {
   const [showFileUpload, setShowFileUpload] = useState(false)
@@ -371,22 +372,22 @@ const Dashboard = () => {
             const Icon = kpi.icon
             const isAnimating = animatingKpi.key === key && animatingKpi.action === 'expand'
             return (
-              <div key={`mini-${key}`} className={`rounded-md border border-gray-200 bg-white px-2.5 py-1.5 shadow-sm flex items-center space-x-2 transition-all duration-200 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-                <Icon className="h-4 w-4 text-primary-600" />
-                <span className="text-sm text-gray-800 max-w-[160px] truncate" title={kpi.title}>{kpi.title}</span>
+              <div key={`mini-${key}`} className={`rounded-md border border-gray-200 bg-white pl-2 pr-1.5 py-1 shadow-sm flex items-center space-x-2 transition-all duration-200 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+                <Icon className="h-3.5 w-3.5 text-primary-600" />
+                <span className="text-xs text-gray-800 max-w-[140px] truncate" title={kpi.title}>{kpi.title}</span>
                 <button
                   onClick={() => toggleMinimizeKpi(key)}
-                  className="text-xs px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  className="p-1 rounded hover:bg-gray-100 text-gray-600"
                   title="Restaurar"
                 >
-                  Restaurar
+                  <RotateCcw className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => hideKpi(key)}
-                  className="text-xs px-2 py-0.5 rounded bg-red-50 hover:bg-red-100 text-red-600"
+                  className="p-1 rounded hover:bg-red-50 text-red-600"
                   title="Fechar"
                 >
-                  Fechar
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             )
@@ -447,8 +448,8 @@ const Dashboard = () => {
                       </>
                     )}
                   </div>
-                  <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Icon className="h-6 w-6 text-white" />
+                  <div className="h-8 w-8 bg-gradient-primary rounded-md flex items-center justify-center flex-shrink-0">
+                    <Icon className="h-4 w-4 text-white" />
                   </div>
                 </div>
               </Card>
