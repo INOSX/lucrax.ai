@@ -17,9 +17,13 @@ import {
   Activity,
   X,
   Minus,
-  DollarSign
+  DollarSign,
+  Mic,
+  Loader2
 } from 'lucide-react'
 import Card from '../ui/Card'
+import { AudioRecorder } from '../../services/audioHandler'
+import { HeyGenService } from '../../services/heygenService'
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user } = useAuth()
@@ -30,6 +34,10 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [refreshTick, setRefreshTick] = useState(0)
   const [sidebarKpiHidden, setSidebarKpiHidden] = useState(false)
   const [sidebarKpiMinimized, setSidebarKpiMinimized] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingStatus, setRecordingStatus] = useState('')
+  const [audioRecorder, setAudioRecorder] = useState(null)
+  const [heygenService] = useState(() => new HeyGenService())
 
   useEffect(() => {
     let mounted = true
@@ -70,6 +78,44 @@ const Sidebar = ({ isOpen, onClose }) => {
     window.addEventListener('storage-updated', onUpdated)
     return () => window.removeEventListener('storage-updated', onUpdated)
   }, [])
+
+  // Inicializar AudioRecorder
+  useEffect(() => {
+    if (!audioRecorder) {
+      const recorder = new AudioRecorder(
+        (status) => {
+          setRecordingStatus(status)
+        },
+        async (text) => {
+          // Quando a transcrição for concluída, gerar vídeo com HeyGen
+          setRecordingStatus('Gerando vídeo com avatar...')
+          try {
+            const result = await heygenService.generateAvatarVideo(text)
+            setRecordingStatus(`Vídeo gerado! ID: ${result.video_id}`)
+            // Você pode adicionar lógica aqui para exibir o vídeo ou salvar a URL
+            console.log('HeyGen video result:', result)
+            setTimeout(() => setRecordingStatus(''), 3000)
+          } catch (error) {
+            console.error('Error generating HeyGen video:', error)
+            setRecordingStatus('Erro ao gerar vídeo: ' + error.message)
+          }
+        }
+      )
+      setAudioRecorder(recorder)
+    }
+  }, [audioRecorder, heygenService])
+
+  const toggleRecording = async () => {
+    if (!audioRecorder) return
+
+    if (!isRecording) {
+      setIsRecording(true)
+      await audioRecorder.startRecording()
+    } else {
+      setIsRecording(false)
+      audioRecorder.stopRecording()
+    }
+  }
   const menuItems = [
     {
       icon: BarChart3,
@@ -206,9 +252,34 @@ const Sidebar = ({ isOpen, onClose }) => {
                   {/* Conteúdo do card */}
                   <div className="p-4 pr-2">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600 pr-16">Total Geral</p>
+                      <p className="text-sm font-medium text-gray-600 pr-16">Avatar HeyGen</p>
                       {!sidebarKpiMinimized && (
-                        <p className="text-2xl font-bold text-gray-900 mt-1">R$ 0,00</p>
+                        <div className="mt-2 space-y-2">
+                          <button
+                            onClick={toggleRecording}
+                            disabled={!audioRecorder}
+                            className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              isRecording
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {isRecording ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Parar Gravação</span>
+                              </>
+                            ) : (
+                              <>
+                                <Mic className="h-4 w-4" />
+                                <span>Iniciar Gravação</span>
+                              </>
+                            )}
+                          </button>
+                          {recordingStatus && (
+                            <p className="text-xs text-gray-600 text-center">{recordingStatus}</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
