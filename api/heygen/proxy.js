@@ -27,21 +27,19 @@ export default async function handler(req, res) {
   }
 
   // Usar a URL base da variável de ambiente ou padrão
-  let baseURL = process.env.NEXT_PUBLIC_BASE_API_URL || process.env.HEYGEN_BASE_URL || 'https://api.heygen.com/v1'
+  // NOTA: NEXT_PUBLIC_* variáveis são expostas no frontend, mas estamos no backend então funciona
+  let baseURL = process.env.NEXT_PUBLIC_BASE_API_URL || process.env.HEYGEN_BASE_URL || 'https://api.heygen.com'
   
-  // Garantir que a URL termine com /v1 se necessário
-  if (!baseURL.endsWith('/v1') && !baseURL.includes('/v1/')) {
-    // Se já tem uma barra no final, não adicionar outra
-    if (baseURL.endsWith('/')) {
-      baseURL = baseURL + 'v1'
-    } else {
-      baseURL = baseURL + '/v1'
-    }
+  // Remover barras finais e garantir /v1
+  baseURL = baseURL.replace(/\/$/, '') // Remove barra final se existir
+  if (!baseURL.endsWith('/v1')) {
+    baseURL = baseURL + '/v1'
   }
   
   console.log('HeyGen Proxy - Action:', action)
   console.log('HeyGen Proxy - Base URL:', baseURL)
   console.log('HeyGen Proxy - API Key exists:', !!heygenApiKey)
+  console.log('HeyGen Proxy - API Key prefix:', heygenApiKey ? heygenApiKey.substring(0, 5) + '...' : 'N/A')
 
   try {
     switch (action) {
@@ -182,6 +180,63 @@ export default async function handler(req, res) {
           console.error(`Endpoint 3 exception: ${err.message}`)
         }
 
+        // Tentativa 4: v2/streaming.create_token (caso use v2)
+        try {
+          const url4 = baseURL.replace('/v1', '/v2') + '/streaming.create_token'
+          console.log(`Trying endpoint 4: ${url4}`)
+          response = await fetch(url4, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          })
+          
+          lastStatus = response.status
+          console.log(`Endpoint 4 (v2 create_token) response status: ${lastStatus}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            console.log('Session created successfully via v2 create_token')
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+          console.log(`Endpoint 4 error: ${lastError.substring(0, 200)}`)
+        } catch (err) {
+          lastError = err.message
+          console.error(`Endpoint 4 exception: ${err.message}`)
+        }
+
+        // Tentativa 5: Sem /v1 no path (URL base direta)
+        try {
+          const baseURLWithoutV1 = baseURL.replace('/v1', '')
+          const url5 = `${baseURLWithoutV1}/streaming.create_token`
+          console.log(`Trying endpoint 5: ${url5}`)
+          response = await fetch(url5, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          })
+          
+          lastStatus = response.status
+          console.log(`Endpoint 5 (no /v1) response status: ${lastStatus}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            console.log('Session created successfully via endpoint without /v1')
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+          console.log(`Endpoint 5 error: ${lastError.substring(0, 200)}`)
+        } catch (err) {
+          lastError = err.message
+          console.error(`Endpoint 5 exception: ${err.message}`)
+        }
+
         // Se todas as tentativas falharam, retornar erro detalhado
         const errorMsg = `HeyGen API error: Status ${lastStatus || 'Unknown'} - ${lastError ? lastError.substring(0, 500) : 'No response'}`
         console.error('All endpoints failed. Final error:', errorMsg)
@@ -189,13 +244,19 @@ export default async function handler(req, res) {
       }
 
       case 'getToken': {
+        console.log('Getting token for session:', params.session_id)
+        console.log('SDP length:', params.sdp?.length || 0)
+        
         // Tentar diferentes endpoints possíveis
         let response
         let lastError
+        let lastStatus
         
-        // Tentativa 1: /streaming.get_token
+        // Tentativa 1: /streaming.get_token (formato com ponto)
         try {
-          response = await fetch(`${baseURL}/streaming.get_token`, {
+          const url1 = `${baseURL}/streaming.get_token`
+          console.log(`Trying endpoint 1: ${url1}`)
+          response = await fetch(url1, {
             method: 'POST',
             headers: {
               'X-Api-Key': heygenApiKey,
@@ -207,18 +268,26 @@ export default async function handler(req, res) {
             }),
           })
           
+          lastStatus = response.status
+          console.log(`Endpoint 1 (get_token) response status: ${lastStatus}`)
+          
           if (response.ok) {
             const data = await response.json()
+            console.log('Token retrieved successfully via get_token')
             return res.status(200).json(data)
           }
           lastError = await response.text()
+          console.log(`Endpoint 1 error: ${lastError.substring(0, 200)}`)
         } catch (err) {
           lastError = err.message
+          console.error(`Endpoint 1 exception: ${err.message}`)
         }
         
-        // Tentativa 2: /streaming/get_token
+        // Tentativa 2: /streaming/get_token (formato REST)
         try {
-          response = await fetch(`${baseURL}/streaming/get_token`, {
+          const url2 = `${baseURL}/streaming/get_token`
+          console.log(`Trying endpoint 2: ${url2}`)
+          response = await fetch(url2, {
             method: 'POST',
             headers: {
               'X-Api-Key': heygenApiKey,
@@ -230,16 +299,24 @@ export default async function handler(req, res) {
             }),
           })
           
+          lastStatus = response.status
+          console.log(`Endpoint 2 (REST get_token) response status: ${lastStatus}`)
+          
           if (response.ok) {
             const data = await response.json()
+            console.log('Token retrieved successfully via REST get_token')
             return res.status(200).json(data)
           }
           lastError = await response.text()
+          console.log(`Endpoint 2 error: ${lastError.substring(0, 200)}`)
         } catch (err) {
           lastError = err.message
+          console.error(`Endpoint 2 exception: ${err.message}`)
         }
 
-        throw new Error(`HeyGen API error: ${response?.status || 'Unknown'} - ${lastError}`)
+        const errorMsg = `Failed to get streaming token: HeyGen API error: ${lastStatus || 'Unknown'} - ${lastError ? lastError.substring(0, 500) : 'No response'}`
+        console.error('All getToken endpoints failed. Final error:', errorMsg)
+        throw new Error(errorMsg)
       }
 
       case 'speak': {
