@@ -28,6 +28,8 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [error, setError] = useState(null)
   const [selectKey, setSelectKey] = useState(0)
   const [refreshTick, setRefreshTick] = useState(0)
+  const [sidebarKpiHidden, setSidebarKpiHidden] = useState(false)
+  const [sidebarKpiMinimized, setSidebarKpiMinimized] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -176,37 +178,43 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
 
             {/* Card KPI abaixo de Análises */}
-            <div className="mt-6 px-3">
-              <Card className="relative overflow-hidden group" padding="none">
-                {/* Botões no canto superior direito (estilo Windows) */}
-                <div className="absolute top-0 right-0 z-10 flex items-center bg-white rounded-bl-lg border-l border-b border-gray-200 shadow-sm">
-                  {/* Ícone do KPI (drasticamente reduzido) */}
-                  <div className="h-5 w-5 bg-gradient-primary rounded-sm flex items-center justify-center mr-0.5">
-                    <DollarSign className="h-3 w-3 text-white" />
+            {!sidebarKpiHidden && (
+              <div className="mt-6 px-3">
+                <Card className="relative overflow-hidden group" padding="none">
+                  {/* Botões no canto superior direito (estilo Windows) */}
+                  <div className="absolute top-0 right-0 z-10 flex items-center bg-white rounded-bl-lg border-l border-b border-gray-200 shadow-sm">
+                    {/* Ícone do KPI (drasticamente reduzido) */}
+                    <div className="h-5 w-5 bg-gradient-primary rounded-sm flex items-center justify-center mr-0.5">
+                      <DollarSign className="h-3 w-3 text-white" />
+                    </div>
+                    <button
+                      onClick={() => setSidebarKpiMinimized(!sidebarKpiMinimized)}
+                      className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                      title={sidebarKpiMinimized ? 'Expandir' : 'Minimizar'}
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setSidebarKpiHidden(true)}
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Fechar"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                  <button
-                    className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                    title="Minimizar"
-                  >
-                    <Minus className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title="Fechar"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
 
-                {/* Conteúdo do card */}
-                <div className="p-4 pr-2">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 pr-16">Total Geral</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">R$ 0,00</p>
+                  {/* Conteúdo do card */}
+                  <div className="p-4 pr-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600 pr-16">Total Geral</p>
+                      {!sidebarKpiMinimized && (
+                        <p className="text-2xl font-bold text-gray-900 mt-1">R$ 0,00</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </div>
+                </Card>
+              </div>
+            )}
 
             {/* Lista de Arquivos do Supabase removida a pedido */}
 
