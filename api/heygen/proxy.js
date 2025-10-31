@@ -27,13 +27,26 @@ export default async function handler(req, res) {
   }
 
   // Usar a URL base da variável de ambiente ou padrão
-  const baseURL = process.env.NEXT_PUBLIC_BASE_API_URL || process.env.HEYGEN_BASE_URL || 'https://api.heygen.com/v1'
+  let baseURL = process.env.NEXT_PUBLIC_BASE_API_URL || process.env.HEYGEN_BASE_URL || 'https://api.heygen.com/v1'
   
-  console.log('HeyGen Proxy - Action:', action, 'Base URL:', baseURL)
+  // Garantir que a URL termine com /v1 se necessário
+  if (!baseURL.endsWith('/v1') && !baseURL.includes('/v1/')) {
+    // Se já tem uma barra no final, não adicionar outra
+    if (baseURL.endsWith('/')) {
+      baseURL = baseURL + 'v1'
+    } else {
+      baseURL = baseURL + '/v1'
+    }
+  }
+  
+  console.log('HeyGen Proxy - Action:', action)
+  console.log('HeyGen Proxy - Base URL:', baseURL)
+  console.log('HeyGen Proxy - API Key exists:', !!heygenApiKey)
 
   try {
     switch (action) {
       case 'listAvatars': {
+        console.log(`Fetching avatars from: ${baseURL}/avatars`)
         const response = await fetch(`${baseURL}/avatars`, {
           method: 'GET',
           headers: {
@@ -41,12 +54,16 @@ export default async function handler(req, res) {
           },
         })
 
+        console.log(`Avatars response status: ${response.status}`)
+
         if (!response.ok) {
           const errorText = await response.text()
+          console.error(`Avatars error: ${errorText}`)
           throw new Error(`HeyGen API error: ${response.status} - ${errorText}`)
         }
 
         const data = await response.json()
+        console.log(`Avatars response data keys:`, Object.keys(data))
         return res.status(200).json(data)
       }
 
@@ -74,14 +91,18 @@ export default async function handler(req, res) {
         }
 
         console.log('Creating session with body:', JSON.stringify(requestBody))
+        console.log(`Attempting to create session at: ${baseURL}/streaming.create`)
         
         // Tentar diferentes endpoints possíveis
         let response
         let lastError
+        let lastStatus
         
-        // Tentativa 1: /streaming.create
+        // Tentativa 1: /streaming.create (formato com ponto)
         try {
-          response = await fetch(`${baseURL}/streaming.create`, {
+          const url1 = `${baseURL}/streaming.create`
+          console.log(`Trying endpoint 1: ${url1}`)
+          response = await fetch(url1, {
             method: 'POST',
             headers: {
               'X-Api-Key': heygenApiKey,
@@ -90,18 +111,26 @@ export default async function handler(req, res) {
             body: JSON.stringify(requestBody),
           })
           
+          lastStatus = response.status
+          console.log(`Endpoint 1 response status: ${lastStatus}`)
+          
           if (response.ok) {
             const data = await response.json()
+            console.log('Session created successfully')
             return res.status(200).json(data)
           }
           lastError = await response.text()
+          console.log(`Endpoint 1 error: ${lastError}`)
         } catch (err) {
           lastError = err.message
+          console.error(`Endpoint 1 exception: ${err.message}`)
         }
         
-        // Tentativa 2: /streaming/create
+        // Tentativa 2: /streaming/create (formato com barra)
         try {
-          response = await fetch(`${baseURL}/streaming/create`, {
+          const url2 = `${baseURL}/streaming/create`
+          console.log(`Trying endpoint 2: ${url2}`)
+          response = await fetch(url2, {
             method: 'POST',
             headers: {
               'X-Api-Key': heygenApiKey,
@@ -110,16 +139,22 @@ export default async function handler(req, res) {
             body: JSON.stringify(requestBody),
           })
           
+          lastStatus = response.status
+          console.log(`Endpoint 2 response status: ${lastStatus}`)
+          
           if (response.ok) {
             const data = await response.json()
+            console.log('Session created successfully (endpoint 2)')
             return res.status(200).json(data)
           }
           lastError = await response.text()
+          console.log(`Endpoint 2 error: ${lastError}`)
         } catch (err) {
           lastError = err.message
+          console.error(`Endpoint 2 exception: ${err.message}`)
         }
 
-        throw new Error(`HeyGen API error: ${response?.status || 'Unknown'} - ${lastError}`)
+        throw new Error(`HeyGen API error: ${lastStatus || 'Unknown'} - ${lastError || 'No response'}`)
       }
 
       case 'getToken': {
