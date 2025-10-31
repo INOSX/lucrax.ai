@@ -220,8 +220,8 @@ export class HeyGenStreamingService {
    */
   async disconnect() {
     try {
-      if (this.avatar && this.sessionId) {
-        await this.avatar.stopAvatar({ sessionId: this.sessionId })
+      if (this.avatar) {
+        await this.avatar.stopAvatar()
         console.log('✅ Session stopped')
       }
     } catch (error) {
