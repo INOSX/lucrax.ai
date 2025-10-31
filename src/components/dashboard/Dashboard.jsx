@@ -155,37 +155,144 @@ const Dashboard = () => {
     }
   }
 
-  // Dados mockados para demonstração
-  const kpis = [
-    {
-      title: 'Total de Vendas',
-      value: 'R$ 45.231',
-      change: '+12.5%',
-      changeType: 'positive',
-      icon: DollarSign
-    },
-    {
-      title: 'Novos Clientes',
-      value: '1.234',
-      change: '+8.2%',
-      changeType: 'positive',
-      icon: Users
-    },
-    {
-      title: 'Taxa de Conversão',
-      value: '3.24%',
-      change: '+2.1%',
-      changeType: 'positive',
-      icon: TrendingUp
-    },
-    {
-      title: 'Atividade',
-      value: '89.2%',
-      change: '-1.2%',
-      changeType: 'negative',
-      icon: Activity
+  // Função para escolher ícone baseado no nome da coluna
+  const getIconForColumn = (columnName) => {
+    const lowerName = columnName.toLowerCase()
+    if (lowerName.includes('venda') || lowerName.includes('receita') || lowerName.includes('valor') || lowerName.includes('preço') || lowerName.includes('total')) {
+      return DollarSign
     }
-  ]
+    if (lowerName.includes('cliente') || lowerName.includes('pessoa') || lowerName.includes('usuário')) {
+      return Users
+    }
+    if (lowerName.includes('taxa') || lowerName.includes('percentual') || lowerName.includes('conversão') || lowerName.includes('crescimento')) {
+      return TrendingUp
+    }
+    if (lowerName.includes('atividade') || lowerName.includes('ativo') || lowerName.includes('status')) {
+      return Activity
+    }
+    // Padrão: TrendingUp para métricas gerais
+    return TrendingUp
+  }
+
+  // Função para formatar valores baseado no tipo e magnitude
+  const formatValue = (value, columnName, metricType) => {
+    const lowerName = columnName.toLowerCase()
+    
+    // Se é um percentual (nome contém 'percent', 'taxa', etc.) ou o valor está entre 0 e 1
+    if (lowerName.includes('percent') || lowerName.includes('taxa') || lowerName.includes('rate') || 
+        (value > 0 && value < 1 && lowerName.includes('proporção'))) {
+      return `${(value * 100).toFixed(2)}%`
+    }
+    
+    // Se é um valor monetário
+    if (lowerName.includes('valor') || lowerName.includes('preço') || lowerName.includes('custo') || 
+        lowerName.includes('receita') || lowerName.includes('venda') || lowerName.includes('total') ||
+        lowerName.includes('r$') || lowerName.includes('dinheiro')) {
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(value)
+    }
+    
+    // Números grandes: usar separador de milhares
+    if (Math.abs(value) >= 1000) {
+      return new Intl.NumberFormat('pt-BR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(value)
+    }
+    
+    // Números pequenos: manter decimais se necessário
+    return value.toFixed(2)
+  }
+
+  // Gerar KPIs dinamicamente a partir dos dados
+  const generateKPIsFromDataset = (dataset) => {
+    if (!dataset || !dataset.data || !dataset.columnTypes || !dataset.stats) {
+      return []
+    }
+
+    const { columnTypes, stats, columns } = dataset
+    const { columnStats } = stats
+    const kpis = []
+
+    // Encontrar todas as colunas numéricas
+    const numericColumns = columns.filter(col => columnTypes[col] === 'number' && columnStats[col]?.numeric)
+
+    // Se não houver colunas numéricas, retornar array vazio ou criar um card genérico
+    if (numericColumns.length === 0) {
+      // Se houver dados mas sem colunas numéricas, criar um card de contagem
+      if (dataset.data.length > 0) {
+        return [{
+          title: 'Total de Registros',
+          value: dataset.data.length.toLocaleString('pt-BR'),
+          change: null,
+          changeType: null,
+          icon: Activity
+        }]
+      }
+      return []
+    }
+
+    // Gerar um KPI para cada coluna numérica disponível
+    numericColumns.forEach(column => {
+      const statsForColumn = columnStats[column].numeric
+      if (!statsForColumn) return
+
+      // Decidir qual métrica usar baseado no nome da coluna
+      let metricValue
+      let metricLabel = 'Total'
+      
+      const lowerName = column.toLowerCase()
+      
+      // Para colunas que sugerem totais (venda, receita, quantidade)
+      if (lowerName.includes('total') || lowerName.includes('soma') || 
+          lowerName.includes('venda') || lowerName.includes('receita') ||
+          lowerName.includes('quantidade') || lowerName.includes('qtd')) {
+        metricValue = statsForColumn.sum
+        metricLabel = 'Total'
+      }
+      // Para colunas que sugerem médias (taxa, percentual, média)
+      else if (lowerName.includes('média') || lowerName.includes('media') || 
+               lowerName.includes('taxa') || lowerName.includes('percentual') ||
+               lowerName.includes('rate') || lowerName.includes('avg')) {
+        metricValue = statsForColumn.avg
+        metricLabel = 'Média'
+      }
+      // Para colunas de preço ou valor unitário
+      else if (lowerName.includes('preço') || lowerName.includes('preco') || 
+               lowerName.includes('valor') || lowerName.includes('unitário')) {
+        metricValue = statsForColumn.avg
+        metricLabel = 'Média'
+      }
+      // Padrão: usar soma se for um valor grande, média caso contrário
+      else {
+        // Se a soma for muito grande, usar média
+        if (Math.abs(statsForColumn.sum) > 10000) {
+          metricValue = statsForColumn.avg
+          metricLabel = 'Média'
+        } else {
+          metricValue = statsForColumn.sum
+          metricLabel = 'Total'
+        }
+      }
+
+      kpis.push({
+        title: column,
+        value: formatValue(metricValue, column, metricLabel),
+        change: null, // Por enquanto sem mudança percentual (pode ser adicionada depois com dados históricos)
+        changeType: null,
+        icon: getIconForColumn(column),
+        rawValue: metricValue,
+        metricType: metricLabel
+      })
+    })
+
+    return kpis
+  }
+
+  // Gerar KPIs dinâmicos baseados no dataset selecionado
+  const kpis = selectedDataset ? generateKPIsFromDataset(selectedDataset) : []
 
   return (
     <div className="space-y-6">
@@ -210,33 +317,41 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, index) => {
-          const Icon = kpi.icon
-          return (
-            <Card key={index} className="relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{kpi.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
-                  <div className="flex items-center mt-2">
-                    <span className={`text-sm font-medium ${
-                      kpi.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {kpi.change}
-                    </span>
-                    <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
+      {/* KPIs Grid - Dinâmico baseado nos dados */}
+      {kpis.length > 0 ? (
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${kpis.length === 3 ? 'lg:grid-cols-3' : ''} ${kpis.length >= 4 ? 'lg:grid-cols-4' : ''} gap-6`}>
+          {kpis.map((kpi, index) => {
+            const Icon = kpi.icon
+            return (
+              <Card key={index} className="relative overflow-hidden">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-600">{kpi.title}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
+                    {kpi.change !== null && kpi.changeType !== null && (
+                      <div className="flex items-center mt-2">
+                        <span className={`text-sm font-medium ${
+                          kpi.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {kpi.change}
+                        </span>
+                        <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0 ml-4">
+                    <Icon className="h-6 w-6 text-white" />
                   </div>
                 </div>
-                <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <Icon className="h-6 w-6 text-white" />
-                </div>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
+              </Card>
+            )
+          })}
+        </div>
+      ) : (
+        <Card className="p-6 text-center">
+          <p className="text-gray-500">Carregue dados para visualizar métricas</p>
+        </Card>
+      )}
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
