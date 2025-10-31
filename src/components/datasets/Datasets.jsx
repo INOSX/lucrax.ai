@@ -4,7 +4,8 @@ import { ClientService } from '../../services/clientService'
 import { supabase } from '../../services/supabase'
 import Card from '../ui/Card'
 import Loading from '../ui/Loading'
-import { Download, Trash2 } from 'lucide-react'
+import { Download, Trash2, Play } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const Datasets = () => {
   const { user } = useAuth()
@@ -15,6 +16,7 @@ const Datasets = () => {
   const [selected, setSelected] = useState({})
   const [isProcessing, setIsProcessing] = useState(false)
   const [successMessage, setSuccessMessage] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     let mounted = true
@@ -317,6 +319,20 @@ const Datasets = () => {
     }
   }
 
+  const handleUseInDashboard = () => {
+    const selectedItems = getSelectedItems()
+    if (selectedItems.length === 0) {
+      setError('Selecione pelo menos um arquivo para usar no Dashboard')
+      return
+    }
+    // Enviar nomes/ids para o Dashboard via state de navegação
+    navigate('/', {
+      state: {
+        selectedFiles: selectedItems.map(it => ({ id: it.id, filename: it.filename }))
+      }
+    })
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -355,6 +371,14 @@ const Datasets = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={handleUseInDashboard}
+                  disabled={isProcessing || Object.values(selected).filter(v => v === true).length === 0}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Play className="w-4 h-4" />
+                  Usar no Dashboard
+                </button>
                 <button
                   onClick={handleDownload}
                   disabled={isProcessing || Object.values(selected).filter(v => v === true).length === 0}

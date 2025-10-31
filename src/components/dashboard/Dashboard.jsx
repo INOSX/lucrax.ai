@@ -1,4 +1,9 @@
 import React, { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { ClientService } from '../../services/clientService'
+import { supabase } from '../../services/supabase'
+import { parseCSVString, parseExcelFromArrayBuffer, cleanData, detectColumnTypes, generateDataStats } from '../../services/dataParser'
 import Card from '../ui/Card'
 import FileUpload from './FileUpload'
 import ChartContainer from './ChartContainer'
@@ -19,6 +24,8 @@ const Dashboard = () => {
   const [chartType, setChartType] = useState('line')
   const [xColumn, setXColumn] = useState('')
   const [yColumn, setYColumn] = useState('')
+  const location = useLocation()
+  const { user } = useAuth()
 
   const handleDataLoaded = (newDataset) => {
     setDatasets(prev => [newDataset, ...prev])
@@ -55,6 +62,65 @@ const Dashboard = () => {
       if (!yCandidate && newDataset.columns.length >= 2) setYColumn(newDataset.columns[1])
     }
   }
+
+  // Carregar arquivos selecionados vindos da página Datasets
+  useEffect(() => {
+    const state = location.state
+    if (!state || !state.selectedFiles || state._consumed) return
+
+    let cancelled = false
+    async function loadFromStorage() {
+      try {
+        // Obter client/bucket do usuário
+        const cr = await ClientService.getClientByUserId(user?.id)
+        if (!cr?.success) return
+        const bucket = String(cr.client.id)
+
+        for (const file of state.selectedFiles) {
+          if (cancelled) break
+          const filename = file.filename
+          const { data: blob, error } = await supabase.storage.from(bucket).download(filename)
+          if (error || !blob) continue
+
+          let parsed
+          // Tentar CSV primeiro
+          if (filename.toLowerCase().endsWith('.csv')) {
+            const text = await blob.text()
+            parsed = await parseCSVString(text)
+          } else if (filename.toLowerCase().endsWith('.xlsx') || filename.toLowerCase().endsWith('.xls')) {
+            const ab = await blob.arrayBuffer()
+            parsed = parseExcelFromArrayBuffer(ab)
+          } else {
+            // Se não reconhecido, tentar como CSV por padrão
+            const text = await blob.text()
+            parsed = await parseCSVString(text)
+          }
+
+          // Limpeza / tipos / stats
+          const cleaned = cleanData(parsed.data)
+          const columnTypes = detectColumnTypes(cleaned)
+          const stats = generateDataStats(cleaned)
+
+          handleDataLoaded({
+            id: filename,
+            name: filename,
+            data: cleaned,
+            columns: parsed.columns,
+            columnTypes,
+            stats,
+            created_at: Date.now()
+          })
+        }
+      } catch (e) {
+        console.error('Erro ao carregar arquivos do Storage:', e)
+      }
+    }
+    loadFromStorage()
+    // Marcar state como consumido para evitar reprocessar ao navegar
+    location.state._consumed = true
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.selectedFiles?.length, user?.id])
 
   // Ouvir seleção de dataset vinda da Sidebar (vector store)
   useEffect(() => {
