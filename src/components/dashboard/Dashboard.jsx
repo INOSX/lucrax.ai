@@ -27,6 +27,7 @@ const Dashboard = () => {
   const [yColumn, setYColumn] = useState('')
   const [hiddenKpiKeys, setHiddenKpiKeys] = useState(new Set())
   const [minimizedKpiKeys, setMinimizedKpiKeys] = useState(new Set())
+  const [animatingKpi, setAnimatingKpi] = useState({ key: null, action: null })
   const location = useLocation()
   const { user } = useAuth()
 
@@ -166,12 +167,26 @@ const Dashboard = () => {
   }
 
   const toggleMinimizeKpi = (key) => {
-    setMinimizedKpiKeys(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+    const willMinimize = !minimizedKpiKeys.has(key)
+    if (willMinimize) {
+      // anima saída do grid
+      setAnimatingKpi({ key, action: 'min' })
+      setTimeout(() => {
+        setAnimatingKpi({ key: null, action: null })
+        setMinimizedKpiKeys(prev => new Set(prev).add(key))
+      }, 180)
+    } else {
+      // anima saída da faixa minimizada
+      setAnimatingKpi({ key, action: 'expand' })
+      setTimeout(() => {
+        setAnimatingKpi({ key: null, action: null })
+        setMinimizedKpiKeys(prev => {
+          const next = new Set(prev)
+          next.delete(key)
+          return next
+        })
+      }, 180)
+    }
   }
 
   // Função para escolher ícone baseado no nome da coluna
@@ -321,6 +336,8 @@ const Dashboard = () => {
 
   // Gerar KPIs dinâmicos baseados no dataset selecionado
   const kpis = selectedDataset ? generateKPIsFromDataset(selectedDataset) : []
+  const minimizedKpis = kpis.filter((k, i) => minimizedKpiKeys.has(k.title || String(i)) && !hiddenKpiKeys.has(k.title || String(i)))
+  const visibleKpis = kpis.filter((k, i) => !minimizedKpiKeys.has(k.title || String(i)) && !hiddenKpiKeys.has(k.title || String(i)))
 
   return (
     <div className="space-y-6">
@@ -346,15 +363,46 @@ const Dashboard = () => {
       </div>
 
       {/* KPIs Grid - Dinâmico baseado nos dados */}
-      {kpis.length > 0 ? (
-        <div className={`grid grid-cols-1 md:grid-cols-2 ${kpis.length === 3 ? 'lg:grid-cols-3' : ''} ${kpis.length >= 4 ? 'lg:grid-cols-4' : ''} gap-6`}>
-          {kpis.map((kpi, index) => {
+      {/* Faixa de KPIs minimizados */}
+      {minimizedKpis.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 -mt-2">
+          {minimizedKpis.map((kpi, index) => {
+            const key = kpi.title || String(index)
+            const Icon = kpi.icon
+            const isAnimating = animatingKpi.key === key && animatingKpi.action === 'expand'
+            return (
+              <div key={`mini-${key}`} className={`rounded-md border border-gray-200 bg-white px-2.5 py-1.5 shadow-sm flex items-center space-x-2 transition-all duration-200 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+                <Icon className="h-4 w-4 text-primary-600" />
+                <span className="text-sm text-gray-800 max-w-[160px] truncate" title={kpi.title}>{kpi.title}</span>
+                <button
+                  onClick={() => toggleMinimizeKpi(key)}
+                  className="text-xs px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  title="Restaurar"
+                >
+                  Restaurar
+                </button>
+                <button
+                  onClick={() => hideKpi(key)}
+                  className="text-xs px-2 py-0.5 rounded bg-red-50 hover:bg-red-100 text-red-600"
+                  title="Fechar"
+                >
+                  Fechar
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {visibleKpis.length > 0 ? (
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${visibleKpis.length === 3 ? 'lg:grid-cols-3' : ''} ${visibleKpis.length >= 4 ? 'lg:grid-cols-4' : ''} gap-6`}>
+          {visibleKpis.map((kpi, index) => {
             const Icon = kpi.icon
             const key = kpi.title || String(index)
-            if (hiddenKpiKeys.has(key)) return null
-            const minimized = minimizedKpiKeys.has(key)
+            const isAnimating = animatingKpi.key === key && animatingKpi.action === 'min'
             return (
-              <Card key={key} className="relative overflow-hidden group">
+              <Card key={key} className={`relative overflow-hidden group transition-all duration-200 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+              >
                 {/* Botões no canto superior direito (estilo Windows) */}
                 <div className="absolute top-0 right-0 z-10 flex items-center bg-white rounded-bl-lg border-l border-b border-gray-200 shadow-sm">
                   <button
@@ -363,7 +411,7 @@ const Dashboard = () => {
                       toggleMinimizeKpi(key)
                     }}
                     className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                    title={minimized ? 'Expandir' : 'Minimizar'}
+                    title={'Minimizar'}
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>
@@ -383,7 +431,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between pr-2">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-600 pr-16">{kpi.title}</p>
-                    {!minimized && (
+                    {(
                       <>
                         <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
                         {kpi.change !== null && kpi.changeType !== null && (
