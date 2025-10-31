@@ -28,13 +28,16 @@ export default async function handler(req, res) {
 
   // Usar a URL base da variável de ambiente ou padrão
   // NOTA: NEXT_PUBLIC_* variáveis são expostas no frontend, mas estamos no backend então funciona
-  let baseURL = process.env.NEXT_PUBLIC_BASE_API_URL || process.env.HEYGEN_BASE_URL || 'https://api.heygen.com'
+  let rawBaseURL = process.env.NEXT_PUBLIC_BASE_API_URL || process.env.HEYGEN_BASE_URL || 'https://api.heygen.com'
   
-  // Remover barras finais e garantir /v1
-  baseURL = baseURL.replace(/\/$/, '') // Remove barra final se existir
-  if (!baseURL.endsWith('/v1')) {
-    baseURL = baseURL + '/v1'
-  }
+  // Remover barras finais
+  rawBaseURL = rawBaseURL.replace(/\/$/, '')
+  
+  // Para streaming, HeyGen usa v2; para outros endpoints, usa v1
+  // Vamos criar ambas as URLs base
+  const baseURLv1 = rawBaseURL + (rawBaseURL.includes('/v1') ? '' : '/v1')
+  const baseURLv2 = rawBaseURL + (rawBaseURL.includes('/v2') ? '' : '/v2')
+  const baseURL = baseURLv2 // Priorizar v2 para streaming (se não funcionar, tentaremos v1)
   
   console.log('HeyGen Proxy - Action:', action)
   console.log('HeyGen Proxy - Base URL:', baseURL)
@@ -44,25 +47,59 @@ export default async function handler(req, res) {
   try {
     switch (action) {
       case 'listAvatars': {
-        console.log(`Fetching avatars from: ${baseURL}/avatars`)
-        const response = await fetch(`${baseURL}/avatars`, {
-          method: 'GET',
-          headers: {
-            'X-Api-Key': heygenApiKey,
-          },
-        })
-
-        console.log(`Avatars response status: ${response.status}`)
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error(`Avatars error: ${errorText}`)
-          throw new Error(`HeyGen API error: ${response.status} - ${errorText}`)
+        // Tentar v2 primeiro, depois v1
+        let response
+        let lastError
+        
+        // Tentativa 1: v2/avatars
+        try {
+          console.log(`Fetching avatars from: ${baseURLv2}/avatars`)
+          response = await fetch(`${baseURLv2}/avatars`, {
+            method: 'GET',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+            },
+          })
+          
+          console.log(`Avatars v2 response status: ${response.status}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            console.log(`✅ Avatars retrieved from v2. Data keys:`, Object.keys(data))
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+          console.log(`Avatars v2 error: ${lastError.substring(0, 200)}`)
+        } catch (err) {
+          lastError = err.message
+          console.error(`Avatars v2 exception: ${err.message}`)
         }
-
-        const data = await response.json()
-        console.log(`Avatars response data keys:`, Object.keys(data))
-        return res.status(200).json(data)
+        
+        // Tentativa 2: v1/avatars
+        try {
+          console.log(`Fetching avatars from: ${baseURLv1}/avatars`)
+          response = await fetch(`${baseURLv1}/avatars`, {
+            method: 'GET',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+            },
+          })
+          
+          console.log(`Avatars v1 response status: ${response.status}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            console.log(`✅ Avatars retrieved from v1. Data keys:`, Object.keys(data))
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+          console.log(`Avatars v1 error: ${lastError.substring(0, 200)}`)
+        } catch (err) {
+          lastError = err.message
+          console.error(`Avatars v1 exception: ${err.message}`)
+        }
+        
+        throw new Error(`HeyGen API error: ${response?.status || 'Unknown'} - ${lastError}`)
       }
 
       case 'listVoices': {
@@ -89,157 +126,57 @@ export default async function handler(req, res) {
         }
 
         console.log('Creating session with body:', JSON.stringify(requestBody))
-        console.log(`Base URL being used: ${baseURL}`)
+        console.log(`Base URL v1: ${baseURLv1}`)
+        console.log(`Base URL v2: ${baseURLv2}`)
         
         // Tentar diferentes endpoints possíveis baseados na documentação
         let response
         let lastError
         let lastStatus
+        const endpoints = [
+          { url: `${baseURLv2}/streaming.create_token`, name: 'v2 streaming.create_token' },
+          { url: `${baseURLv2}/streaming/create_token`, name: 'v2 streaming/create_token' },
+          { url: `${baseURLv2}/streaming.create`, name: 'v2 streaming.create' },
+          { url: `${baseURLv2}/streaming/create`, name: 'v2 streaming/create' },
+          { url: `${baseURLv1}/streaming.create_token`, name: 'v1 streaming.create_token' },
+          { url: `${baseURLv1}/streaming/create_token`, name: 'v1 streaming/create_token' },
+          { url: `${baseURLv1}/streaming.create`, name: 'v1 streaming.create' },
+          { url: `${baseURLv1}/streaming/create`, name: 'v1 streaming/create' },
+          { url: `${rawBaseURL}/streaming.create_token`, name: 'root streaming.create_token' },
+        ]
         
-        // Tentativa 1: /streaming.create_token (endpoint mais comum)
-        try {
-          const url1 = `${baseURL}/streaming.create_token`
-          console.log(`Trying endpoint 1: ${url1}`)
-          response = await fetch(url1, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': heygenApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          })
-          
-          lastStatus = response.status
-          console.log(`Endpoint 1 (create_token) response status: ${lastStatus}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('Session created successfully via create_token')
-            return res.status(200).json(data)
+        for (let i = 0; i < endpoints.length; i++) {
+          const endpoint = endpoints[i]
+          try {
+            console.log(`Trying endpoint ${i + 1}: ${endpoint.name} - ${endpoint.url}`)
+            response = await fetch(endpoint.url, {
+              method: 'POST',
+              headers: {
+                'X-Api-Key': heygenApiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestBody),
+            })
+            
+            lastStatus = response.status
+            console.log(`Endpoint ${i + 1} (${endpoint.name}) response status: ${lastStatus}`)
+            
+            if (response.ok) {
+              const data = await response.json()
+              console.log(`✅ Session created successfully via ${endpoint.name}`)
+              return res.status(200).json(data)
+            }
+            lastError = await response.text()
+            console.log(`Endpoint ${i + 1} error (first 200 chars): ${lastError.substring(0, 200)}`)
+          } catch (err) {
+            lastError = err.message
+            console.error(`Endpoint ${i + 1} exception: ${err.message}`)
           }
-          lastError = await response.text()
-          console.log(`Endpoint 1 error: ${lastError.substring(0, 200)}`)
-        } catch (err) {
-          lastError = err.message
-          console.error(`Endpoint 1 exception: ${err.message}`)
-        }
-        
-        // Tentativa 2: /streaming.create (formato alternativo)
-        try {
-          const url2 = `${baseURL}/streaming.create`
-          console.log(`Trying endpoint 2: ${url2}`)
-          response = await fetch(url2, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': heygenApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          })
-          
-          lastStatus = response.status
-          console.log(`Endpoint 2 (create) response status: ${lastStatus}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('Session created successfully via create')
-            return res.status(200).json(data)
-          }
-          lastError = await response.text()
-          console.log(`Endpoint 2 error: ${lastError.substring(0, 200)}`)
-        } catch (err) {
-          lastError = err.message
-          console.error(`Endpoint 2 exception: ${err.message}`)
-        }
-        
-        // Tentativa 3: /streaming/create (formato REST)
-        try {
-          const url3 = `${baseURL}/streaming/create`
-          console.log(`Trying endpoint 3: ${url3}`)
-          response = await fetch(url3, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': heygenApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          })
-          
-          lastStatus = response.status
-          console.log(`Endpoint 3 (REST create) response status: ${lastStatus}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('Session created successfully via REST create')
-            return res.status(200).json(data)
-          }
-          lastError = await response.text()
-          console.log(`Endpoint 3 error: ${lastError.substring(0, 200)}`)
-        } catch (err) {
-          lastError = err.message
-          console.error(`Endpoint 3 exception: ${err.message}`)
-        }
-
-        // Tentativa 4: v2/streaming.create_token (caso use v2)
-        try {
-          const url4 = baseURL.replace('/v1', '/v2') + '/streaming.create_token'
-          console.log(`Trying endpoint 4: ${url4}`)
-          response = await fetch(url4, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': heygenApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          })
-          
-          lastStatus = response.status
-          console.log(`Endpoint 4 (v2 create_token) response status: ${lastStatus}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('Session created successfully via v2 create_token')
-            return res.status(200).json(data)
-          }
-          lastError = await response.text()
-          console.log(`Endpoint 4 error: ${lastError.substring(0, 200)}`)
-        } catch (err) {
-          lastError = err.message
-          console.error(`Endpoint 4 exception: ${err.message}`)
-        }
-
-        // Tentativa 5: Sem /v1 no path (URL base direta)
-        try {
-          const baseURLWithoutV1 = baseURL.replace('/v1', '')
-          const url5 = `${baseURLWithoutV1}/streaming.create_token`
-          console.log(`Trying endpoint 5: ${url5}`)
-          response = await fetch(url5, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': heygenApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-          })
-          
-          lastStatus = response.status
-          console.log(`Endpoint 5 (no /v1) response status: ${lastStatus}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('Session created successfully via endpoint without /v1')
-            return res.status(200).json(data)
-          }
-          lastError = await response.text()
-          console.log(`Endpoint 5 error: ${lastError.substring(0, 200)}`)
-        } catch (err) {
-          lastError = err.message
-          console.error(`Endpoint 5 exception: ${err.message}`)
         }
 
         // Se todas as tentativas falharam, retornar erro detalhado
         const errorMsg = `HeyGen API error: Status ${lastStatus || 'Unknown'} - ${lastError ? lastError.substring(0, 500) : 'No response'}`
-        console.error('All endpoints failed. Final error:', errorMsg)
+        console.error('❌ All endpoints failed. Final error:', errorMsg)
         throw new Error(errorMsg)
       }
 
