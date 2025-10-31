@@ -10,10 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vercel/analytics": "^1.1.2",
+    "@heygen/streaming-avatar": "^2.1.0",
     "@supabase/supabase-js": "^2.38.4",
+    "@vercel/analytics": "^1.1.2",
     "axios": "^1.6.2",
     "chart.js": "^4.4.0",
+    "livekit-client": "^2.15.14",
     "lucide-react": "^0.294.0",
     "openai": "^6.7.0",
     "papaparse": "^5.4.1",

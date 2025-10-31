@@ -121,15 +121,17 @@ export default async function handler(req, res) {
 
       case 'createSessionToken': {
         // Criar Session Token primeiro (conforme documentação: https://docs.heygen.com/reference/create-session-token)
+        // Endpoint correto: POST https://api.heygen.com/v1/streaming.create_token
         console.log('Creating session token (required before streaming)')
         
         let response
         let lastError
         let lastStatus
         const endpoints = [
+          { url: `${baseURLv1}/streaming.create_token`, name: 'v1 streaming.create_token (CORRETO)' },
+          { url: `${rawBaseURL}/v1/streaming.create_token`, name: 'explicit v1 streaming.create_token' },
+          { url: `${baseURLv2}/streaming.create_token`, name: 'v2 streaming.create_token' },
           { url: `${baseURLv1}/session/create_token`, name: 'v1 session/create_token' },
-          { url: `${baseURLv2}/session/create_token`, name: 'v2 session/create_token' },
-          { url: `${rawBaseURL}/v1/session/create_token`, name: 'explicit v1 session/create_token' },
         ]
         
         for (let i = 0; i < endpoints.length; i++) {

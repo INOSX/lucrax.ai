@@ -117,8 +117,10 @@ const Sidebar = ({ isOpen, onClose }) => {
       
       try {
         setRecordingStatus('Conectando avatar...')
-        const sessionId = await streamingService.createSession()
-        await streamingService.connectStreaming(sessionId, videoRef.current)
+        // createSession retorna um objeto com session_id e outros dados
+        const sessionData = await streamingService.createSession()
+        // connectStreaming agora usa o SDK que gerencia tudo internamente
+        await streamingService.connectStreaming(sessionData.session_id, videoRef.current)
         if (mounted) {
           setAvatarConnected(true)
           setRecordingStatus('Avatar conectado!')
