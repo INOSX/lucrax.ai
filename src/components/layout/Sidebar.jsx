@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { ClientService } from '../../services/clientService'
 import { OpenAIService } from '../../services/openaiService'
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import Card from '../ui/Card'
 import { AudioRecorder } from '../../services/audioHandler'
-import { HeyGenService } from '../../services/heygenService'
+import { HeyGenStreamingService } from '../../services/heygenStreamingService'
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { user } = useAuth()
@@ -37,7 +37,9 @@ const Sidebar = ({ isOpen, onClose }) => {
   const [isRecording, setIsRecording] = useState(false)
   const [recordingStatus, setRecordingStatus] = useState('')
   const [audioRecorder, setAudioRecorder] = useState(null)
-  const [heygenService] = useState(() => new HeyGenService())
+  const [streamingService] = useState(() => new HeyGenStreamingService())
+  const [avatarConnected, setAvatarConnected] = useState(false)
+  const videoRef = useRef(null)
 
   useEffect(() => {
     let mounted = true
@@ -79,7 +81,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('storage-updated', onUpdated)
   }, [])
 
-  // Inicializar AudioRecorder
+  // Inicializar AudioRecorder e conectar avatar
   useEffect(() => {
     if (!audioRecorder) {
       const recorder = new AudioRecorder(
@@ -87,23 +89,60 @@ const Sidebar = ({ isOpen, onClose }) => {
           setRecordingStatus(status)
         },
         async (text) => {
-          // Quando a transcrição for concluída, gerar vídeo com HeyGen
-          setRecordingStatus('Gerando vídeo com avatar...')
-          try {
-            const result = await heygenService.generateAvatarVideo(text)
-            setRecordingStatus(`Vídeo gerado! ID: ${result.video_id}`)
-            // Você pode adicionar lógica aqui para exibir o vídeo ou salvar a URL
-            console.log('HeyGen video result:', result)
-            setTimeout(() => setRecordingStatus(''), 3000)
-          } catch (error) {
-            console.error('Error generating HeyGen video:', error)
-            setRecordingStatus('Erro ao gerar vídeo: ' + error.message)
+          // Quando a transcrição for concluída, enviar texto para o avatar falar
+          if (avatarConnected) {
+            setRecordingStatus('Enviando para avatar...')
+            try {
+              await streamingService.sendText(text)
+              setRecordingStatus('')
+            } catch (error) {
+              console.error('Error sending text to avatar:', error)
+              setRecordingStatus('Erro: ' + error.message)
+            }
+          } else {
+            setRecordingStatus('Avatar não conectado')
           }
         }
       )
       setAudioRecorder(recorder)
     }
-  }, [audioRecorder, heygenService])
+  }, [audioRecorder, avatarConnected, streamingService])
+
+  // Conectar avatar ao montar o componente
+  useEffect(() => {
+    let mounted = true
+    
+    async function connectAvatar() {
+      if (!videoRef.current) return
+      
+      try {
+        setRecordingStatus('Conectando avatar...')
+        const sessionId = await streamingService.createSession()
+        await streamingService.connectStreaming(sessionId, videoRef.current)
+        if (mounted) {
+          setAvatarConnected(true)
+          setRecordingStatus('Avatar conectado!')
+          setTimeout(() => setRecordingStatus(''), 2000)
+        }
+      } catch (error) {
+        console.error('Error connecting avatar:', error)
+        if (mounted) {
+          setRecordingStatus('Erro ao conectar: ' + error.message)
+        }
+      }
+    }
+
+    if (videoRef.current && !avatarConnected) {
+      connectAvatar()
+    }
+
+    return () => {
+      mounted = false
+      if (avatarConnected) {
+        streamingService.disconnect()
+      }
+    }
+  }, [avatarConnected, streamingService])
 
   const toggleRecording = async () => {
     if (!audioRecorder) return
@@ -255,9 +294,26 @@ const Sidebar = ({ isOpen, onClose }) => {
                       <p className="text-sm font-medium text-gray-600 pr-16">Avatar HeyGen</p>
                       {!sidebarKpiMinimized && (
                         <div className="mt-2 space-y-2">
+                          {/* Vídeo do avatar ao vivo */}
+                          <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', minHeight: '120px' }}>
+                            <video
+                              ref={videoRef}
+                              autoPlay
+                              playsInline
+                              muted
+                              className="w-full h-full object-cover"
+                            />
+                            {!avatarConnected && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Botão de gravação */}
                           <button
                             onClick={toggleRecording}
-                            disabled={!audioRecorder}
+                            disabled={!audioRecorder || !avatarConnected}
                             className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                               isRecording
                                 ? 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -272,7 +328,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                             ) : (
                               <>
                                 <Mic className="h-4 w-4" />
-                                <span>Iniciar Gravação</span>
+                                <span>Enviar Áudio</span>
                               </>
                             )}
                           </button>
