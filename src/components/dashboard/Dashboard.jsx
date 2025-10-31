@@ -216,12 +216,60 @@ const Dashboard = () => {
     const { columnStats } = stats
     const kpis = []
 
-    // Encontrar todas as colunas numéricas
-    const numericColumns = columns.filter(col => columnTypes[col] === 'number' && columnStats[col]?.numeric)
+    // 1) Tentar gerar KPIs por categoria (ex.: Entrada, Saída) somando uma métrica numérica
+    const candidateCategoricals = columns
+      .filter(col => columnTypes[col] === 'string')
+      .sort((a, b) => {
+        const ua = (columnStats[a]?.uniqueValues ?? Number.MAX_SAFE_INTEGER)
+        const ub = (columnStats[b]?.uniqueValues ?? Number.MAX_SAFE_INTEGER)
+        return ua - ub
+      })
 
-    // Se não houver colunas numéricas, retornar array vazio ou criar um card genérico
+    const categorical = candidateCategoricals.find(col => {
+      const u = columnStats[col]?.uniqueValues
+      return typeof u === 'number' && u >= 2 && u <= 10 // poucas categorias para cards
+    })
+
+    const numericColumns = columns.filter(col => columnTypes[col] === 'number' && columnStats[col]?.numeric)
+    const measure = numericColumns[0]
+
+    if (categorical && measure) {
+      // Agregar soma por categoria
+      const totalsByCategory = {}
+      dataset.data.forEach(row => {
+        const key = String(row[categorical] ?? '').trim()
+        const valRaw = row[measure]
+        const val = typeof valRaw === 'number' ? valRaw : Number(valRaw)
+        if (!key || isNaN(val)) return
+        totalsByCategory[key] = (totalsByCategory[key] || 0) + val
+      })
+
+      const entries = Object.entries(totalsByCategory)
+        .sort((a, b) => b[1] - a[1])
+
+      entries.forEach(([label, value]) => {
+        // Ajuste de ícone quando o rótulo indica "entrada" ou "saída"
+        const lower = label.toLowerCase()
+        let Icon = getIconForColumn(measure)
+        if (lower.includes('entrada')) Icon = TrendingUp
+        if (lower.includes('saída') || lower.includes('saida')) Icon = Activity
+
+        kpis.push({
+          title: label, // título = valor categórico (ex.: Entrada, Saída)
+          value: formatValue(value, measure, 'Total'),
+          change: null,
+          changeType: null,
+          icon: Icon,
+          rawValue: value,
+          metricType: 'Total'
+        })
+      })
+
+      if (kpis.length > 0) return kpis
+    }
+
+    // 2) Fallback: se não houver categórica adequada, mostrar KPIs por coluna numérica
     if (numericColumns.length === 0) {
-      // Se houver dados mas sem colunas numéricas, criar um card de contagem
       if (dataset.data.length > 0) {
         return [{
           title: 'Total de Registros',
@@ -234,57 +282,18 @@ const Dashboard = () => {
       return []
     }
 
-    // Gerar um KPI para cada coluna numérica disponível
     numericColumns.forEach(column => {
       const statsForColumn = columnStats[column].numeric
       if (!statsForColumn) return
-
-      // Decidir qual métrica usar baseado no nome da coluna
-      let metricValue
-      let metricLabel = 'Total'
-      
-      const lowerName = column.toLowerCase()
-      
-      // Para colunas que sugerem totais (venda, receita, quantidade)
-      if (lowerName.includes('total') || lowerName.includes('soma') || 
-          lowerName.includes('venda') || lowerName.includes('receita') ||
-          lowerName.includes('quantidade') || lowerName.includes('qtd')) {
-        metricValue = statsForColumn.sum
-        metricLabel = 'Total'
-      }
-      // Para colunas que sugerem médias (taxa, percentual, média)
-      else if (lowerName.includes('média') || lowerName.includes('media') || 
-               lowerName.includes('taxa') || lowerName.includes('percentual') ||
-               lowerName.includes('rate') || lowerName.includes('avg')) {
-        metricValue = statsForColumn.avg
-        metricLabel = 'Média'
-      }
-      // Para colunas de preço ou valor unitário
-      else if (lowerName.includes('preço') || lowerName.includes('preco') || 
-               lowerName.includes('valor') || lowerName.includes('unitário')) {
-        metricValue = statsForColumn.avg
-        metricLabel = 'Média'
-      }
-      // Padrão: usar soma se for um valor grande, média caso contrário
-      else {
-        // Se a soma for muito grande, usar média
-        if (Math.abs(statsForColumn.sum) > 10000) {
-          metricValue = statsForColumn.avg
-          metricLabel = 'Média'
-        } else {
-          metricValue = statsForColumn.sum
-          metricLabel = 'Total'
-        }
-      }
-
+      const metricValue = statsForColumn.sum
       kpis.push({
         title: column,
-        value: formatValue(metricValue, column, metricLabel),
-        change: null, // Por enquanto sem mudança percentual (pode ser adicionada depois com dados históricos)
+        value: formatValue(metricValue, column, 'Total'),
+        change: null,
         changeType: null,
         icon: getIconForColumn(column),
         rawValue: metricValue,
-        metricType: metricLabel
+        metricType: 'Total'
       })
     })
 
