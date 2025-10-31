@@ -173,26 +173,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
             {/* Lista de Arquivos do Supabase removida a pedido */}
 
-            {/* Chart Types Section */}
-            <div className="mt-8">
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Tipos de Gráficos
-              </h3>
-              <div className="space-y-1">
-                {chartTypes.map((chart) => {
-                  const Icon = chart.icon
-                  return (
-                    <button
-                      key={chart.type}
-                      className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{chart.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            {/* Tipos de Gráficos removidos a pedido */}
           </nav>
 
           {/* Bottom section */}
