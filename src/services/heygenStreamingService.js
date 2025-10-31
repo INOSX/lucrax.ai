@@ -205,7 +205,6 @@ export class HeyGenStreamingService {
 
     try {
       await this.avatar.speak({
-        sessionId: this.sessionId,
         text: text,
         task_type: TaskType.REPEAT, // REPEAT = falar imediatamente
       })
