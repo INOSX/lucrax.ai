@@ -164,20 +164,20 @@ export class HeyGenStreamingService {
         }
 
         // Listener para quando avatar começa a falar
-        const onAvatarStart = () => {
+        const onAvatarStartTalking = () => {
           console.log('Avatar started speaking')
         }
 
         // Listener para quando avatar para de falar
-        const onAvatarStop = () => {
+        const onAvatarStopTalking = () => {
           console.log('Avatar stopped speaking')
         }
 
         // Registrar listeners
         this.avatar.on(StreamingEvents.STREAM_READY, onStreamReady)
         this.avatar.on(StreamingEvents.STREAM_DISCONNECTED, onDisconnected)
-        this.avatar.on(StreamingEvents.AVATAR_START, onAvatarStart)
-        this.avatar.on(StreamingEvents.AVATAR_STOP, onAvatarStop)
+        this.avatar.on(StreamingEvents.AVATAR_START_TALKING, onAvatarStartTalking)
+        this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, onAvatarStopTalking)
 
         // Timeout de segurança (30 segundos)
         setTimeout(() => {
