@@ -314,7 +314,13 @@ const FileUpload = ({ onDataLoaded, onClose }) => {
                               key={colIndex}
                               className="px-4 py-2 text-sm text-gray-900 whitespace-nowrap"
                             >
-                              {row[column] || '-'}
+                              {(() => {
+                                const v = row[column]
+                                if (v === null || v === undefined || v === '') return '-'
+                                if (v instanceof Date) return v.toLocaleDateString('pt-BR')
+                                if (typeof v === 'number') return new Intl.NumberFormat('pt-BR').format(v)
+                                return String(v)
+                              })()}
                             </td>
                           ))}
                           {parsedData.columns.length > 10 && (
