@@ -184,75 +184,53 @@ export default async function handler(req, res) {
         console.log('Getting token for session:', params.session_id)
         console.log('SDP length:', params.sdp?.length || 0)
         
-        // Tentar diferentes endpoints possíveis
+        const requestBody = {
+          session_id: params.session_id,
+          sdp: params.sdp,
+        }
+        
         let response
         let lastError
         let lastStatus
+        const endpoints = [
+          { url: `${baseURLv2}/streaming.get_token`, name: 'v2 streaming.get_token' },
+          { url: `${baseURLv2}/streaming/get_token`, name: 'v2 streaming/get_token' },
+          { url: `${baseURLv1}/streaming.get_token`, name: 'v1 streaming.get_token' },
+          { url: `${baseURLv1}/streaming/get_token`, name: 'v1 streaming/get_token' },
+          { url: `${rawBaseURL}/streaming.get_token`, name: 'root streaming.get_token' },
+        ]
         
-        // Tentativa 1: /streaming.get_token (formato com ponto)
-        try {
-          const url1 = `${baseURL}/streaming.get_token`
-          console.log(`Trying endpoint 1: ${url1}`)
-          response = await fetch(url1, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': heygenApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              session_id: params.session_id,
-              sdp: params.sdp,
-            }),
-          })
-          
-          lastStatus = response.status
-          console.log(`Endpoint 1 (get_token) response status: ${lastStatus}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('Token retrieved successfully via get_token')
-            return res.status(200).json(data)
+        for (let i = 0; i < endpoints.length; i++) {
+          const endpoint = endpoints[i]
+          try {
+            console.log(`Trying endpoint ${i + 1}: ${endpoint.name} - ${endpoint.url}`)
+            response = await fetch(endpoint.url, {
+              method: 'POST',
+              headers: {
+                'X-Api-Key': heygenApiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestBody),
+            })
+            
+            lastStatus = response.status
+            console.log(`Endpoint ${i + 1} (${endpoint.name}) response status: ${lastStatus}`)
+            
+            if (response.ok) {
+              const data = await response.json()
+              console.log(`✅ Token retrieved successfully via ${endpoint.name}`)
+              return res.status(200).json(data)
+            }
+            lastError = await response.text()
+            console.log(`Endpoint ${i + 1} error (first 200 chars): ${lastError.substring(0, 200)}`)
+          } catch (err) {
+            lastError = err.message
+            console.error(`Endpoint ${i + 1} exception: ${err.message}`)
           }
-          lastError = await response.text()
-          console.log(`Endpoint 1 error: ${lastError.substring(0, 200)}`)
-        } catch (err) {
-          lastError = err.message
-          console.error(`Endpoint 1 exception: ${err.message}`)
-        }
-        
-        // Tentativa 2: /streaming/get_token (formato REST)
-        try {
-          const url2 = `${baseURL}/streaming/get_token`
-          console.log(`Trying endpoint 2: ${url2}`)
-          response = await fetch(url2, {
-            method: 'POST',
-            headers: {
-              'X-Api-Key': heygenApiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              session_id: params.session_id,
-              sdp: params.sdp,
-            }),
-          })
-          
-          lastStatus = response.status
-          console.log(`Endpoint 2 (REST get_token) response status: ${lastStatus}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('Token retrieved successfully via REST get_token')
-            return res.status(200).json(data)
-          }
-          lastError = await response.text()
-          console.log(`Endpoint 2 error: ${lastError.substring(0, 200)}`)
-        } catch (err) {
-          lastError = err.message
-          console.error(`Endpoint 2 exception: ${err.message}`)
         }
 
         const errorMsg = `Failed to get streaming token: HeyGen API error: ${lastStatus || 'Unknown'} - ${lastError ? lastError.substring(0, 500) : 'No response'}`
-        console.error('All getToken endpoints failed. Final error:', errorMsg)
+        console.error('❌ All getToken endpoints failed. Final error:', errorMsg)
         throw new Error(errorMsg)
       }
 
