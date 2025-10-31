@@ -138,9 +138,10 @@ export class HeyGenStreamingService {
         // Listener para quando o stream estiver pronto
         const onStreamReady = (event) => {
           console.log('✅ Stream is ready')
-          if (videoElement && event.detail) {
-            // event.detail contém o MediaStream
-            videoElement.srcObject = event.detail
+          // O MediaStream está disponível na propriedade mediaStream do avatar
+          const stream = this.avatar.mediaStream || (event && event.detail)
+          if (videoElement && stream) {
+            videoElement.srcObject = stream
             videoElement.play()
               .then(() => {
                 console.log('✅ Video started playing')
@@ -150,6 +151,24 @@ export class HeyGenStreamingService {
                 console.error('Error playing video:', err)
                 reject(err)
               })
+          } else if (videoElement) {
+            // Se não tiver stream ainda, tentar usar o mediaStream do avatar
+            setTimeout(() => {
+              if (this.avatar && this.avatar.mediaStream) {
+                videoElement.srcObject = this.avatar.mediaStream
+                videoElement.play()
+                  .then(() => {
+                    console.log('✅ Video started playing (retry)')
+                    resolve()
+                  })
+                  .catch(err => {
+                    console.error('Error playing video (retry):', err)
+                    reject(err)
+                  })
+              } else {
+                resolve()
+              }
+            }, 500)
           } else {
             resolve()
           }
