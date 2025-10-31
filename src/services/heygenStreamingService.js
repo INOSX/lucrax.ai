@@ -2,7 +2,7 @@
  * Serviço para integração com HeyGen Streaming Avatar usando SDK oficial
  * Baseado na documentação: https://docs.heygen.com/docs/streaming-avatar-sdk
  */
-import { StreamingAvatar, StreamingEvents, TaskType } from '@heygen/streaming-avatar'
+import StreamingAvatar, { StreamingEvents, TaskType } from '@heygen/streaming-avatar'
 
 export class HeyGenStreamingService {
   constructor() {
