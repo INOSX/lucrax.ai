@@ -14,7 +14,8 @@ import {
   Activity,
   Upload,
   BarChart3,
-  X
+  X,
+  Minus
 } from 'lucide-react'
 
 const Dashboard = () => {
@@ -24,12 +25,17 @@ const Dashboard = () => {
   const [chartType, setChartType] = useState('line')
   const [xColumn, setXColumn] = useState('')
   const [yColumn, setYColumn] = useState('')
+  const [hiddenKpiKeys, setHiddenKpiKeys] = useState(new Set())
+  const [minimizedKpiKeys, setMinimizedKpiKeys] = useState(new Set())
   const location = useLocation()
   const { user } = useAuth()
 
   const handleDataLoaded = (newDataset) => {
     setDatasets(prev => [newDataset, ...prev])
     setSelectedDataset(newDataset)
+    // Resetar visibilidade/estado dos cards ao carregar novos dados
+    setHiddenKpiKeys(new Set())
+    setMinimizedKpiKeys(new Set())
     // Heurística: eixo X categórico, eixo Y numérico
     if (newDataset.columns && newDataset.columns.length >= 1) {
       const columnTypes = newDataset.columnTypes || {}
@@ -153,6 +159,19 @@ const Dashboard = () => {
     } else {
       setYColumn(column)
     }
+  }
+
+  const hideKpi = (key) => {
+    setHiddenKpiKeys(prev => new Set(prev).add(key))
+  }
+
+  const toggleMinimizeKpi = (key) => {
+    setMinimizedKpiKeys(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   // Função para escolher ícone baseado no nome da coluna
@@ -331,25 +350,48 @@ const Dashboard = () => {
         <div className={`grid grid-cols-1 md:grid-cols-2 ${kpis.length === 3 ? 'lg:grid-cols-3' : ''} ${kpis.length >= 4 ? 'lg:grid-cols-4' : ''} gap-6`}>
           {kpis.map((kpi, index) => {
             const Icon = kpi.icon
+            const key = kpi.title || String(index)
+            if (hiddenKpiKeys.has(key)) return null
+            const minimized = minimizedKpiKeys.has(key)
             return (
-              <Card key={index} className="relative overflow-hidden">
-                <div className="flex items-center justify-between">
+              <Card key={key} className="relative overflow-hidden">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-600">{kpi.title}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
-                    {kpi.change !== null && kpi.changeType !== null && (
-                      <div className="flex items-center mt-2">
-                        <span className={`text-sm font-medium ${
-                          kpi.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {kpi.change}
-                        </span>
-                        <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
-                      </div>
+                    {!minimized && (
+                      <>
+                        <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
+                        {kpi.change !== null && kpi.changeType !== null && (
+                          <div className="flex items-center mt-2">
+                            <span className={`text-sm font-medium ${
+                              kpi.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {kpi.change}
+                            </span>
+                            <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-                  <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0 ml-4">
-                    <Icon className="h-6 w-6 text-white" />
+                  <div className="flex items-center space-x-2 ml-2">
+                    <button
+                      onClick={() => toggleMinimizeKpi(key)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                      title={minimized ? 'Expandir' : 'Minimizar'}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => hideKpi(key)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                      title="Fechar"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <div className="h-12 w-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0 ml-1">
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
                   </div>
                 </div>
               </Card>
