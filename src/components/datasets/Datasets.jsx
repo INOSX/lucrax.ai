@@ -4,6 +4,7 @@ import { ClientService } from '../../services/clientService'
 import { supabase } from '../../services/supabase'
 import Card from '../ui/Card'
 import Loading from '../ui/Loading'
+import { Download, Trash2 } from 'lucide-react'
 
 const Datasets = () => {
   const { user } = useAuth()
@@ -12,6 +13,8 @@ const Datasets = () => {
   const [items, setItems] = useState([])
   const [client, setClient] = useState(null)
   const [selected, setSelected] = useState({})
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [successMessage, setSuccessMessage] = useState(null)
 
   useEffect(() => {
     let mounted = true
@@ -133,6 +136,187 @@ const Datasets = () => {
     setSelected(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
+  const toggleSelectAll = () => {
+    const allSelected = Object.values(selected).every(v => v === true) && items.length > 0
+    if (allSelected) {
+      setSelected({})
+    } else {
+      const newSelected = {}
+      items.forEach(item => {
+        newSelected[item.id] = true
+      })
+      setSelected(newSelected)
+    }
+  }
+
+  const getSelectedItems = () => {
+    return items.filter(item => selected[item.id] === true)
+  }
+
+  const handleDownload = async () => {
+    const selectedItems = getSelectedItems()
+    if (selectedItems.length === 0) {
+      setError('Selecione pelo menos um arquivo para download')
+      return
+    }
+
+    if (!client) {
+      setError('Cliente não encontrado')
+      return
+    }
+
+    setIsProcessing(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      const bucket = String(client.id)
+      
+      for (const item of selectedItems) {
+        try {
+          const { data, error: downloadErr } = await supabase.storage
+            .from(bucket)
+            .download(item.filename)
+
+          if (downloadErr) {
+            console.error(`Erro ao baixar ${item.filename}:`, downloadErr)
+            setError(`Erro ao baixar ${item.filename}: ${downloadErr.message}`)
+            continue
+          }
+
+          // Criar link de download
+          const url = window.URL.createObjectURL(data)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = item.filename
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          window.URL.revokeObjectURL(url)
+        } catch (err) {
+          console.error(`Erro ao processar download de ${item.filename}:`, err)
+          setError(`Erro ao baixar ${item.filename}`)
+        }
+      }
+
+      setSuccessMessage(`${selectedItems.length} arquivo(s) baixado(s) com sucesso`)
+      setTimeout(() => setSuccessMessage(null), 3000)
+    } catch (err) {
+      console.error('Erro ao fazer download:', err)
+      setError(err.message || 'Erro ao fazer download dos arquivos')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    const selectedItems = getSelectedItems()
+    if (selectedItems.length === 0) {
+      setError('Selecione pelo menos um arquivo para excluir')
+      return
+    }
+
+    if (!client) {
+      setError('Cliente não encontrado')
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir ${selectedItems.length} arquivo(s)? Esta ação não pode ser desfeita.`
+    )
+
+    if (!confirmed) return
+
+    setIsProcessing(true)
+    setError(null)
+    setSuccessMessage(null)
+
+    try {
+      const bucket = String(client.id)
+      const clientId = client.id
+      let deletedCount = 0
+      let failedCount = 0
+
+      for (const item of selectedItems) {
+        try {
+          // Excluir do Storage
+          const { error: storageErr } = await supabase.storage
+            .from(bucket)
+            .remove([item.filename])
+
+          if (storageErr) {
+            console.warn(`Erro ao excluir ${item.filename} do Storage:`, storageErr)
+            // Continuar mesmo se falhar no Storage
+          }
+
+          // Excluir da tabela data_sources_new (usando o id se disponível)
+          if (item.id && item.id !== item.filename) {
+            const { error: dbErr } = await supabase
+              .from('data_sources_new')
+              .delete()
+              .eq('id', item.id)
+              .eq('client_id', clientId)
+
+            if (dbErr) {
+              console.warn(`Erro ao excluir ${item.filename} da tabela:`, dbErr)
+              // Tentar excluir por filename se não encontrou por id
+              const { error: dbErr2 } = await supabase
+                .from('data_sources_new')
+                .delete()
+                .eq('filename', item.filename)
+                .eq('client_id', clientId)
+
+              if (dbErr2) {
+                console.warn(`Erro ao excluir ${item.filename} da tabela (por filename):`, dbErr2)
+              }
+            }
+          } else {
+            // Tentar excluir por filename
+            const { error: dbErr } = await supabase
+              .from('data_sources_new')
+              .delete()
+              .eq('filename', item.filename)
+              .eq('client_id', clientId)
+
+            if (dbErr) {
+              console.warn(`Erro ao excluir ${item.filename} da tabela:`, dbErr)
+            }
+          }
+
+          deletedCount++
+        } catch (err) {
+          console.error(`Erro ao excluir ${item.filename}:`, err)
+          failedCount++
+        }
+      }
+
+      // Limpar seleções
+      setSelected({})
+
+      // Recarregar lista
+      if (deletedCount > 0) {
+        setSuccessMessage(`${deletedCount} arquivo(s) excluído(s) com sucesso`)
+        setTimeout(() => setSuccessMessage(null), 3000)
+        
+        // Remover itens excluídos da lista local
+        const deletedIds = new Set(selectedItems.map(item => item.id))
+        setItems(prevItems => prevItems.filter(item => !deletedIds.has(item.id)))
+        
+        // Disparar evento para recarregar se necessário
+        window.dispatchEvent(new Event('storage-updated'))
+      }
+
+      if (failedCount > 0) {
+        setError(`${failedCount} arquivo(s) não puderam ser excluídos. Verifique o console para detalhes.`)
+      }
+    } catch (err) {
+      console.error('Erro ao excluir arquivos:', err)
+      setError(err.message || 'Erro ao excluir arquivos')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -147,22 +331,65 @@ const Datasets = () => {
         {!isLoading && error && (
           <div className="p-6 text-sm text-red-600">{error}</div>
         )}
+        {!isLoading && successMessage && (
+          <div className="p-4 mx-6 mt-4 text-sm text-green-600 bg-green-50 rounded-md">{successMessage}</div>
+        )}
         {!isLoading && !error && items.length === 0 && (
           <div className="p-6 text-sm text-gray-600">Nenhum arquivo encontrado no bucket.</div>
         )}
         {!isLoading && !error && items.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arquivo</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tamanho</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criado em</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                </tr>
-              </thead>
+          <>
+            {/* Barra de ações */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={toggleSelectAll}
+                  className="text-sm text-gray-700 hover:text-gray-900 font-medium"
+                >
+                  {Object.values(selected).every(v => v === true) && items.length > 0
+                    ? 'Desselecionar Todos'
+                    : 'Selecionar Todos'}
+                </button>
+                <span className="text-sm text-gray-500">
+                  {Object.values(selected).filter(v => v === true).length} de {items.length} selecionado(s)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownload}
+                  disabled={isProcessing || Object.values(selected).filter(v => v === true).length === 0}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isProcessing || Object.values(selected).filter(v => v === true).length === 0}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Excluir
+                </button>
+              </div>
+            </div>
+            {isProcessing && (
+              <div className="px-6 py-2 bg-blue-50 text-blue-700 text-sm">
+                Processando... Por favor, aguarde.
+              </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arquivo</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tamanho</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Criado em</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  </tr>
+                </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {items.map((it) => (
                   <tr key={it.id}>
@@ -183,7 +410,8 @@ const Datasets = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </Card>
     </div>
