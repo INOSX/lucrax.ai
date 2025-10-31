@@ -7,8 +7,7 @@
  */
 export class HeyGenStreamingService {
   constructor() {
-    this.apiKey = import.meta.env.HEYGEN_API_KEY || ''
-    this.baseURL = 'https://api.heygen.com/v1'
+    // API key não é mais necessária no frontend, pois usamos proxy no backend
     this.sessionId = null
     this.pc = null
     this.videoElement = null
@@ -21,10 +20,6 @@ export class HeyGenStreamingService {
    */
   async createSession(avatarId = null) {
     try {
-      if (!this.apiKey) {
-        throw new Error('HeyGen API key not configured')
-      }
-
       // Buscar avatar padrão se não fornecido
       if (!avatarId) {
         const avatars = await this.listAvatars()
@@ -33,18 +28,15 @@ export class HeyGenStreamingService {
         }
       }
 
-      const requestBody = {}
-      if (avatarId) {
-        requestBody.avatar_id = avatarId
-      }
-
-      const response = await fetch(`${this.baseURL}/streaming.create`, {
+      const response = await fetch('/api/heygen/proxy', {
         method: 'POST',
         headers: {
-          'X-Api-Key': this.apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          action: 'createSession',
+          avatar_id: avatarId,
+        }),
       })
 
       if (!response.ok) {
@@ -69,20 +61,21 @@ export class HeyGenStreamingService {
    */
   async connectWithSDP(sessionId, sdpOffer) {
     try {
-      const response = await fetch(`${this.baseURL}/streaming.get_token`, {
+      const response = await fetch('/api/heygen/proxy', {
         method: 'POST',
         headers: {
-          'X-Api-Key': this.apiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'getToken',
           session_id: sessionId,
           sdp: sdpOffer,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to get streaming token')
+        const error = await response.json().catch(() => ({ error: response.statusText }))
+        throw new Error(`Failed to get streaming token: ${error.message || error.error || response.statusText}`)
       }
 
       return await response.json()
@@ -161,13 +154,13 @@ export class HeyGenStreamingService {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/streaming.speak`, {
+      const response = await fetch('/api/heygen/proxy', {
         method: 'POST',
         headers: {
-          'X-Api-Key': this.apiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'speak',
           session_id: this.sessionId,
           text,
         }),
@@ -190,15 +183,14 @@ export class HeyGenStreamingService {
    */
   async listAvatars() {
     try {
-      if (!this.apiKey) {
-        return []
-      }
-
-      const response = await fetch(`${this.baseURL}/avatars`, {
-        method: 'GET',
+      const response = await fetch('/api/heygen/proxy', {
+        method: 'POST',
         headers: {
-          'X-Api-Key': this.apiKey,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          action: 'listAvatars',
+        }),
       })
 
       if (!response.ok) {
@@ -224,13 +216,13 @@ export class HeyGenStreamingService {
 
     if (this.sessionId) {
       try {
-        await fetch(`${this.baseURL}/streaming.stop`, {
+        await fetch('/api/heygen/proxy', {
           method: 'POST',
           headers: {
-            'X-Api-Key': this.apiKey,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            action: 'stop',
             session_id: this.sessionId,
           }),
         })
