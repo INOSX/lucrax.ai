@@ -109,35 +109,13 @@ const Sidebar = ({ isOpen, onClose }) => {
   }, [audioRecorder, avatarConnected, streamingService])
 
   // Conectar avatar ao montar o componente
+  // NOTA: A conexão deve ser iniciada após interação do usuário devido à política de AudioContext do navegador
   useEffect(() => {
     let mounted = true
     
-    async function connectAvatar() {
-      if (!videoRef.current) return
-      
-      try {
-        setRecordingStatus('Conectando avatar...')
-        // createSession retorna um objeto com session_id e outros dados
-        const sessionData = await streamingService.createSession()
-        // connectStreaming agora usa o SDK que gerencia tudo internamente
-        await streamingService.connectStreaming(sessionData.session_id, videoRef.current)
-        if (mounted) {
-          setAvatarConnected(true)
-          setRecordingStatus('Avatar conectado!')
-          setTimeout(() => setRecordingStatus(''), 2000)
-        }
-      } catch (error) {
-        console.error('Error connecting avatar:', error)
-        if (mounted) {
-          setRecordingStatus('Erro ao conectar: ' + error.message)
-        }
-      }
-    }
-
-    if (videoRef.current && !avatarConnected) {
-      connectAvatar()
-    }
-
+    // Não conectar automaticamente - aguardar interação do usuário
+    // A conexão será iniciada quando o usuário clicar no botão "Enviar Áudio" pela primeira vez
+    
     return () => {
       mounted = false
       if (avatarConnected) {
@@ -146,8 +124,39 @@ const Sidebar = ({ isOpen, onClose }) => {
     }
   }, [avatarConnected, streamingService])
 
+  // Função para inicializar o avatar (chamada na primeira interação do usuário)
+  const initializeAvatar = async () => {
+    if (!videoRef.current) return
+    
+    if (avatarConnected) {
+      // Avatar já está conectado
+      return
+    }
+
+    try {
+      setRecordingStatus('Conectando avatar...')
+      // Passar videoElement diretamente para createSession para configurar listeners ANTES da sessão
+      const sessionData = await streamingService.createSession(null, videoRef.current)
+      // Se chegou aqui, o stream está pronto
+      setAvatarConnected(true)
+      setRecordingStatus('Avatar conectado!')
+      setTimeout(() => setRecordingStatus(''), 2000)
+    } catch (error) {
+      console.error('Error connecting avatar:', error)
+      setRecordingStatus('Erro ao conectar: ' + error.message)
+      setTimeout(() => setRecordingStatus(''), 3000)
+    }
+  }
+
   const toggleRecording = async () => {
     if (!audioRecorder) return
+
+    // Se o avatar não estiver conectado, inicializar primeiro
+    if (!avatarConnected) {
+      await initializeAvatar()
+      // Aguardar um pouco para o avatar se conectar
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
 
     if (!isRecording) {
       setIsRecording(true)

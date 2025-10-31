@@ -80,11 +80,154 @@ export class HeyGenStreamingService {
   }
 
   /**
+   * Configura os event listeners do avatar
+   * @param {HTMLVideoElement} videoElement - Elemento de vídeo
+   * @returns {Promise<void>} Resolve quando o stream estiver pronto
+   */
+  setupEventListeners(videoElement) {
+    return new Promise((resolve, reject) => {
+      if (!this.avatar) {
+        reject(new Error('Avatar not initialized'))
+        return
+      }
+
+      let streamReady = false
+      let timeoutId = null
+
+      // Listener para quando o stream estiver pronto
+      const onStreamReady = (event) => {
+        console.log('✅ Stream is ready event received')
+        streamReady = true
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          timeoutId = null
+        }
+
+        // O MediaStream está disponível na propriedade mediaStream do avatar
+        const stream = this.avatar.mediaStream || (event && event.detail && event.detail.stream) || (event && event.detail)
+        
+        if (videoElement && stream) {
+          console.log('Setting video srcObject from stream')
+          videoElement.srcObject = stream
+          videoElement.play()
+            .then(() => {
+              console.log('✅ Video started playing')
+              resolve()
+            })
+            .catch(err => {
+              console.error('Error playing video:', err)
+              // Não rejeitar aqui, apenas logar o erro
+              // O stream pode estar pronto mesmo que o play falhe inicialmente
+              resolve()
+            })
+        } else {
+          // Verificar novamente após um breve delay
+          setTimeout(() => {
+            if (this.avatar && this.avatar.mediaStream) {
+              console.log('Setting video srcObject from avatar.mediaStream (delayed)')
+              videoElement.srcObject = this.avatar.mediaStream
+              videoElement.play()
+                .then(() => {
+                  console.log('✅ Video started playing (delayed)')
+                  resolve()
+                })
+                .catch(err => {
+                  console.error('Error playing video (delayed):', err)
+                  resolve()
+                })
+            } else {
+              console.warn('Stream ready but no mediaStream found')
+              resolve()
+            }
+          }, 1000)
+        }
+      }
+
+      // Listener para desconexão
+      const onDisconnected = () => {
+        console.log('Stream disconnected')
+        if (videoElement) {
+          videoElement.srcObject = null
+        }
+      }
+
+      // Listener para quando avatar começa a falar
+      const onAvatarStartTalking = () => {
+        console.log('Avatar started speaking')
+      }
+
+      // Listener para quando avatar para de falar
+      const onAvatarStopTalking = () => {
+        console.log('Avatar stopped speaking')
+      }
+
+      // Registrar listeners ANTES de iniciar a sessão
+      this.avatar.on(StreamingEvents.STREAM_READY, onStreamReady)
+      this.avatar.on(StreamingEvents.STREAM_DISCONNECTED, onDisconnected)
+      this.avatar.on(StreamingEvents.AVATAR_START_TALKING, onAvatarStartTalking)
+      this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, onAvatarStopTalking)
+
+      // Verificar periodicamente se o mediaStream está disponível
+      const checkInterval = setInterval(() => {
+        if (this.avatar && this.avatar.mediaStream && !videoElement.srcObject) {
+          console.log('MediaStream detected via polling, setting video srcObject')
+          streamReady = true
+          clearInterval(checkInterval)
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+            timeoutId = null
+          }
+          videoElement.srcObject = this.avatar.mediaStream
+          videoElement.play()
+            .then(() => {
+              console.log('✅ Video started playing (via polling)')
+              resolve()
+            })
+            .catch(err => {
+              console.error('Error playing video (via polling):', err)
+              resolve()
+            })
+        }
+      }, 500)
+
+      // Timeout de segurança aumentado para 60 segundos
+      timeoutId = setTimeout(() => {
+        clearInterval(checkInterval)
+        if (!streamReady && !videoElement.srcObject) {
+          console.warn('Stream ready event not received within timeout')
+          // Verificar uma última vez se o mediaStream está disponível
+          if (this.avatar && this.avatar.mediaStream) {
+            console.log('MediaStream found after timeout, attempting to use it')
+            videoElement.srcObject = this.avatar.mediaStream
+            videoElement.play()
+              .then(() => {
+                console.log('✅ Video started playing (after timeout)')
+                resolve()
+              })
+              .catch(err => {
+                console.error('Error playing video (after timeout):', err)
+                // Não rejeitar, apenas logar
+                resolve()
+              })
+          } else {
+            reject(new Error('Stream timeout: STREAM_READY event not received and mediaStream not available'))
+          }
+        } else {
+          // Stream está pronto, apenas limpar
+          clearInterval(checkInterval)
+        }
+      }, 60000) // 60 segundos
+    })
+  }
+
+  /**
    * Cria uma nova sessão de streaming usando o SDK oficial
    * @param {string} avatarId - ID do avatar (opcional)
+   * @param {HTMLVideoElement} videoElement - Elemento de vídeo (opcional, pode ser configurado depois)
    * @returns {Promise<Object>} Session data
    */
-  async createSession(avatarId = null) {
+  async createSession(avatarId = null, videoElement = null) {
     try {
       // Obter session token primeiro
       const token = await this.getSessionToken()
@@ -101,6 +244,13 @@ export class HeyGenStreamingService {
       // Criar instância do SDK
       this.avatar = new StreamingAvatar({ token })
 
+      // Configurar event listeners ANTES de criar a sessão se videoElement fornecido
+      let streamReadyPromise = null
+      if (videoElement) {
+        this.videoElement = videoElement
+        streamReadyPromise = this.setupEventListeners(videoElement)
+      }
+
       // Criar e iniciar sessão
       // O SDK gerencia automaticamente a conexão LiveKit
       const sessionData = await this.avatar.createStartAvatar({
@@ -110,6 +260,11 @@ export class HeyGenStreamingService {
 
       this.sessionId = sessionData.session_id
       console.log('✅ Session created with SDK:', this.sessionId)
+
+      // Aguardar o stream ficar pronto se listeners foram configurados
+      if (streamReadyPromise) {
+        await streamReadyPromise
+      }
 
       return sessionData
     } catch (error) {
@@ -133,79 +288,8 @@ export class HeyGenStreamingService {
         throw new Error('Avatar not initialized. Call createSession first.')
       }
 
-      // Configurar event listeners antes de esperar pelo stream
-      return new Promise((resolve, reject) => {
-        // Listener para quando o stream estiver pronto
-        const onStreamReady = (event) => {
-          console.log('✅ Stream is ready')
-          // O MediaStream está disponível na propriedade mediaStream do avatar
-          const stream = this.avatar.mediaStream || (event && event.detail)
-          if (videoElement && stream) {
-            videoElement.srcObject = stream
-            videoElement.play()
-              .then(() => {
-                console.log('✅ Video started playing')
-                resolve()
-              })
-              .catch(err => {
-                console.error('Error playing video:', err)
-                reject(err)
-              })
-          } else if (videoElement) {
-            // Se não tiver stream ainda, tentar usar o mediaStream do avatar
-            setTimeout(() => {
-              if (this.avatar && this.avatar.mediaStream) {
-                videoElement.srcObject = this.avatar.mediaStream
-                videoElement.play()
-                  .then(() => {
-                    console.log('✅ Video started playing (retry)')
-                    resolve()
-                  })
-                  .catch(err => {
-                    console.error('Error playing video (retry):', err)
-                    reject(err)
-                  })
-              } else {
-                resolve()
-              }
-            }, 500)
-          } else {
-            resolve()
-          }
-        }
-
-        // Listener para desconexão
-        const onDisconnected = () => {
-          console.log('Stream disconnected')
-          if (videoElement) {
-            videoElement.srcObject = null
-          }
-        }
-
-        // Listener para quando avatar começa a falar
-        const onAvatarStartTalking = () => {
-          console.log('Avatar started speaking')
-        }
-
-        // Listener para quando avatar para de falar
-        const onAvatarStopTalking = () => {
-          console.log('Avatar stopped speaking')
-        }
-
-        // Registrar listeners
-        this.avatar.on(StreamingEvents.STREAM_READY, onStreamReady)
-        this.avatar.on(StreamingEvents.STREAM_DISCONNECTED, onDisconnected)
-        this.avatar.on(StreamingEvents.AVATAR_START_TALKING, onAvatarStartTalking)
-        this.avatar.on(StreamingEvents.AVATAR_STOP_TALKING, onAvatarStopTalking)
-
-        // Timeout de segurança (30 segundos)
-        setTimeout(() => {
-          if (!videoElement.srcObject) {
-            console.warn('Stream ready event not received within timeout')
-            reject(new Error('Stream timeout: STREAM_READY event not received'))
-          }
-        }, 30000)
-      })
+      // Se os listeners ainda não foram configurados, configurar agora
+      await this.setupEventListeners(videoElement)
       
     } catch (error) {
       console.error('Error connecting to streaming:', error)
