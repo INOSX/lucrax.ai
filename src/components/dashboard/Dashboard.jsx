@@ -311,7 +311,7 @@ const Dashboard = () => {
           value: dataset.data.length.toLocaleString('pt-BR'),
           change: null,
           changeType: null,
-          icon: Activity
+      icon: Activity
         }]
       }
       return []
@@ -398,14 +398,18 @@ const Dashboard = () => {
       {visibleKpis.length > 0 ? (
         <div className={`grid grid-cols-1 md:grid-cols-2 ${visibleKpis.length === 3 ? 'lg:grid-cols-3' : ''} ${visibleKpis.length >= 4 ? 'lg:grid-cols-4' : ''} gap-6`}>
           {visibleKpis.map((kpi, index) => {
-            const Icon = kpi.icon
+          const Icon = kpi.icon
             const key = kpi.title || String(index)
             const isAnimating = animatingKpi.key === key && animatingKpi.action === 'min'
-            return (
+          return (
               <Card key={key} className={`relative overflow-hidden group transition-all duration-200 ${isAnimating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
               >
                 {/* Botões no canto superior direito (estilo Windows) */}
                 <div className="absolute top-0 right-0 z-10 flex items-center bg-white rounded-bl-lg border-l border-b border-gray-200 shadow-sm">
+                  {/* Ícone do KPI (drasticamente reduzido) */}
+                  <div className="h-5 w-5 bg-gradient-primary rounded-sm flex items-center justify-center mr-0.5">
+                    <Icon className="h-3 w-3 text-white" />
+                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -434,28 +438,26 @@ const Dashboard = () => {
                     <p className="text-sm font-medium text-gray-600 pr-16">{kpi.title}</p>
                     {(
                       <>
-                        <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
                         {kpi.change !== null && kpi.changeType !== null && (
-                          <div className="flex items-center mt-2">
-                            <span className={`text-sm font-medium ${
-                              kpi.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {kpi.change}
-                            </span>
-                            <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
-                          </div>
+                  <div className="flex items-center mt-2">
+                    <span className={`text-sm font-medium ${
+                      kpi.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {kpi.change}
+                    </span>
+                    <span className="text-sm text-gray-500 ml-1">vs mês anterior</span>
+                  </div>
                         )}
                       </>
                     )}
-                  </div>
-                  <div className="h-8 w-8 bg-gradient-primary rounded-md flex items-center justify-center flex-shrink-0">
-                    <Icon className="h-4 w-4 text-white" />
-                  </div>
                 </div>
-              </Card>
-            )
-          })}
-        </div>
+                  {/* Ícone removido daqui; agora aparece na barra de ações no topo */}
+              </div>
+            </Card>
+          )
+        })}
+      </div>
       ) : (
         <Card className="p-6 text-center">
           <p className="text-gray-500">Carregue dados para visualizar métricas</p>
