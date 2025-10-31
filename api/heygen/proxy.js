@@ -26,7 +26,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Action is required' })
   }
 
-  const baseURL = 'https://api.heygen.com/v1'
+  // Usar a URL base da variável de ambiente ou padrão
+  const baseURL = process.env.NEXT_PUBLIC_BASE_API_URL || process.env.HEYGEN_BASE_URL || 'https://api.heygen.com/v1'
+  
+  console.log('HeyGen Proxy - Action:', action, 'Base URL:', baseURL)
 
   try {
     switch (action) {
@@ -70,87 +73,213 @@ export default async function handler(req, res) {
           requestBody.avatar_id = params.avatar_id
         }
 
-        const response = await fetch(`${baseURL}/streaming.create`, {
-          method: 'POST',
-          headers: {
-            'X-Api-Key': heygenApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`HeyGen API error: ${response.status} - ${errorText}`)
+        console.log('Creating session with body:', JSON.stringify(requestBody))
+        
+        // Tentar diferentes endpoints possíveis
+        let response
+        let lastError
+        
+        // Tentativa 1: /streaming.create
+        try {
+          response = await fetch(`${baseURL}/streaming.create`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
+        }
+        
+        // Tentativa 2: /streaming/create
+        try {
+          response = await fetch(`${baseURL}/streaming/create`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
         }
 
-        const data = await response.json()
-        return res.status(200).json(data)
+        throw new Error(`HeyGen API error: ${response?.status || 'Unknown'} - ${lastError}`)
       }
 
       case 'getToken': {
-        const response = await fetch(`${baseURL}/streaming.get_token`, {
-          method: 'POST',
-          headers: {
-            'X-Api-Key': heygenApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            session_id: params.session_id,
-            sdp: params.sdp,
-          }),
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`HeyGen API error: ${response.status} - ${errorText}`)
+        // Tentar diferentes endpoints possíveis
+        let response
+        let lastError
+        
+        // Tentativa 1: /streaming.get_token
+        try {
+          response = await fetch(`${baseURL}/streaming.get_token`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: params.session_id,
+              sdp: params.sdp,
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
+        }
+        
+        // Tentativa 2: /streaming/get_token
+        try {
+          response = await fetch(`${baseURL}/streaming/get_token`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: params.session_id,
+              sdp: params.sdp,
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
         }
 
-        const data = await response.json()
-        return res.status(200).json(data)
+        throw new Error(`HeyGen API error: ${response?.status || 'Unknown'} - ${lastError}`)
       }
 
       case 'speak': {
-        const response = await fetch(`${baseURL}/streaming.speak`, {
-          method: 'POST',
-          headers: {
-            'X-Api-Key': heygenApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            session_id: params.session_id,
-            text: params.text,
-          }),
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`HeyGen API error: ${response.status} - ${errorText}`)
+        // Tentar diferentes endpoints possíveis
+        let response
+        let lastError
+        
+        // Tentativa 1: /streaming.speak
+        try {
+          response = await fetch(`${baseURL}/streaming.speak`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: params.session_id,
+              text: params.text,
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
+        }
+        
+        // Tentativa 2: /streaming/speak
+        try {
+          response = await fetch(`${baseURL}/streaming/speak`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: params.session_id,
+              text: params.text,
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
         }
 
-        const data = await response.json()
-        return res.status(200).json(data)
+        throw new Error(`HeyGen API error: ${response?.status || 'Unknown'} - ${lastError}`)
       }
 
       case 'stop': {
-        const response = await fetch(`${baseURL}/streaming.stop`, {
-          method: 'POST',
-          headers: {
-            'X-Api-Key': heygenApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            session_id: params.session_id,
-          }),
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`HeyGen API error: ${response.status} - ${errorText}`)
+        // Tentar diferentes endpoints possíveis
+        let response
+        let lastError
+        
+        // Tentativa 1: /streaming.stop
+        try {
+          response = await fetch(`${baseURL}/streaming.stop`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: params.session_id,
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
+        }
+        
+        // Tentativa 2: /streaming/stop
+        try {
+          response = await fetch(`${baseURL}/streaming/stop`, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_id: params.session_id,
+            }),
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+        } catch (err) {
+          lastError = err.message
         }
 
-        const data = await response.json()
-        return res.status(200).json(data)
+        throw new Error(`HeyGen API error: ${response?.status || 'Unknown'} - ${lastError}`)
       }
 
       default:
@@ -158,7 +287,11 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('Error in HeyGen proxy:', error)
-    return res.status(500).json({ error: error.message || 'Failed to process request' })
+    console.error('Error stack:', error.stack)
+    return res.status(500).json({ 
+      error: error.message || 'Failed to process request',
+      details: error.stack
+    })
   }
 }
 
