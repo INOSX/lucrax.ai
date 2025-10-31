@@ -119,6 +119,53 @@ export default async function handler(req, res) {
         return res.status(200).json(data)
       }
 
+      case 'createSessionToken': {
+        // Criar Session Token primeiro (conforme documentação: https://docs.heygen.com/reference/create-session-token)
+        console.log('Creating session token (required before streaming)')
+        
+        let response
+        let lastError
+        let lastStatus
+        const endpoints = [
+          { url: `${baseURLv1}/session/create_token`, name: 'v1 session/create_token' },
+          { url: `${baseURLv2}/session/create_token`, name: 'v2 session/create_token' },
+          { url: `${rawBaseURL}/v1/session/create_token`, name: 'explicit v1 session/create_token' },
+        ]
+        
+        for (let i = 0; i < endpoints.length; i++) {
+          const endpoint = endpoints[i]
+          try {
+            console.log(`Trying endpoint ${i + 1}: ${endpoint.name} - ${endpoint.url}`)
+            response = await fetch(endpoint.url, {
+              method: 'POST',
+              headers: {
+                'X-Api-Key': heygenApiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({}),
+            })
+            
+            lastStatus = response.status
+            console.log(`Endpoint ${i + 1} (${endpoint.name}) response status: ${lastStatus}`)
+            
+            if (response.ok) {
+              const data = await response.json()
+              console.log(`✅ Session token created successfully via ${endpoint.name}`)
+              return res.status(200).json(data)
+            }
+            lastError = await response.text()
+            console.log(`Endpoint ${i + 1} error (first 200 chars): ${lastError.substring(0, 200)}`)
+          } catch (err) {
+            lastError = err.message
+            console.error(`Endpoint ${i + 1} exception: ${err.message}`)
+          }
+        }
+
+        const errorMsg = `Failed to create session token: Status ${lastStatus || 'Unknown'} - ${lastError ? lastError.substring(0, 500) : 'No response'}`
+        console.error('❌ All createSessionToken endpoints failed. Final error:', errorMsg)
+        throw new Error(errorMsg)
+      }
+
       case 'createSession': {
         const requestBody = {}
         if (params.avatar_id) {
@@ -130,10 +177,13 @@ export default async function handler(req, res) {
         console.log(`Base URL v2: ${baseURLv2}`)
         
         // Tentar diferentes endpoints possíveis baseados na documentação
+        // NOTA: Segundo a documentação, o endpoint pode ser /v1/streaming.new
         let response
         let lastError
         let lastStatus
         const endpoints = [
+          { url: `${baseURLv1}/streaming.new`, name: 'v1 streaming.new' },
+          { url: `${baseURLv1}/streaming/create`, name: 'v1 streaming/create' },
           { url: `${baseURLv2}/streaming.create_token`, name: 'v2 streaming.create_token' },
           { url: `${baseURLv2}/streaming/create_token`, name: 'v2 streaming/create_token' },
           { url: `${baseURLv2}/streaming.create`, name: 'v2 streaming.create' },
@@ -141,7 +191,6 @@ export default async function handler(req, res) {
           { url: `${baseURLv1}/streaming.create_token`, name: 'v1 streaming.create_token' },
           { url: `${baseURLv1}/streaming/create_token`, name: 'v1 streaming/create_token' },
           { url: `${baseURLv1}/streaming.create`, name: 'v1 streaming.create' },
-          { url: `${baseURLv1}/streaming/create`, name: 'v1 streaming/create' },
           { url: `${rawBaseURL}/streaming.create_token`, name: 'root streaming.create_token' },
         ]
         
