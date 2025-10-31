@@ -91,16 +91,16 @@ export default async function handler(req, res) {
         }
 
         console.log('Creating session with body:', JSON.stringify(requestBody))
-        console.log(`Attempting to create session at: ${baseURL}/streaming.create`)
+        console.log(`Base URL being used: ${baseURL}`)
         
-        // Tentar diferentes endpoints possíveis
+        // Tentar diferentes endpoints possíveis baseados na documentação
         let response
         let lastError
         let lastStatus
         
-        // Tentativa 1: /streaming.create (formato com ponto)
+        // Tentativa 1: /streaming.create_token (endpoint mais comum)
         try {
-          const url1 = `${baseURL}/streaming.create`
+          const url1 = `${baseURL}/streaming.create_token`
           console.log(`Trying endpoint 1: ${url1}`)
           response = await fetch(url1, {
             method: 'POST',
@@ -112,23 +112,23 @@ export default async function handler(req, res) {
           })
           
           lastStatus = response.status
-          console.log(`Endpoint 1 response status: ${lastStatus}`)
+          console.log(`Endpoint 1 (create_token) response status: ${lastStatus}`)
           
           if (response.ok) {
             const data = await response.json()
-            console.log('Session created successfully')
+            console.log('Session created successfully via create_token')
             return res.status(200).json(data)
           }
           lastError = await response.text()
-          console.log(`Endpoint 1 error: ${lastError}`)
+          console.log(`Endpoint 1 error: ${lastError.substring(0, 200)}`)
         } catch (err) {
           lastError = err.message
           console.error(`Endpoint 1 exception: ${err.message}`)
         }
         
-        // Tentativa 2: /streaming/create (formato com barra)
+        // Tentativa 2: /streaming.create (formato alternativo)
         try {
-          const url2 = `${baseURL}/streaming/create`
+          const url2 = `${baseURL}/streaming.create`
           console.log(`Trying endpoint 2: ${url2}`)
           response = await fetch(url2, {
             method: 'POST',
@@ -140,21 +140,52 @@ export default async function handler(req, res) {
           })
           
           lastStatus = response.status
-          console.log(`Endpoint 2 response status: ${lastStatus}`)
+          console.log(`Endpoint 2 (create) response status: ${lastStatus}`)
           
           if (response.ok) {
             const data = await response.json()
-            console.log('Session created successfully (endpoint 2)')
+            console.log('Session created successfully via create')
             return res.status(200).json(data)
           }
           lastError = await response.text()
-          console.log(`Endpoint 2 error: ${lastError}`)
+          console.log(`Endpoint 2 error: ${lastError.substring(0, 200)}`)
         } catch (err) {
           lastError = err.message
           console.error(`Endpoint 2 exception: ${err.message}`)
         }
+        
+        // Tentativa 3: /streaming/create (formato REST)
+        try {
+          const url3 = `${baseURL}/streaming/create`
+          console.log(`Trying endpoint 3: ${url3}`)
+          response = await fetch(url3, {
+            method: 'POST',
+            headers: {
+              'X-Api-Key': heygenApiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          })
+          
+          lastStatus = response.status
+          console.log(`Endpoint 3 (REST create) response status: ${lastStatus}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            console.log('Session created successfully via REST create')
+            return res.status(200).json(data)
+          }
+          lastError = await response.text()
+          console.log(`Endpoint 3 error: ${lastError.substring(0, 200)}`)
+        } catch (err) {
+          lastError = err.message
+          console.error(`Endpoint 3 exception: ${err.message}`)
+        }
 
-        throw new Error(`HeyGen API error: ${lastStatus || 'Unknown'} - ${lastError || 'No response'}`)
+        // Se todas as tentativas falharam, retornar erro detalhado
+        const errorMsg = `HeyGen API error: Status ${lastStatus || 'Unknown'} - ${lastError ? lastError.substring(0, 500) : 'No response'}`
+        console.error('All endpoints failed. Final error:', errorMsg)
+        throw new Error(errorMsg)
       }
 
       case 'getToken': {
